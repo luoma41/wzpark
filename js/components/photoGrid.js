@@ -11,6 +11,13 @@ class PhotoGrid {
         }
       });
     });
+
+    this.container.addEventListener('click', (e) => {
+      const btn = e.target.closest('.delete-btn');
+      if (btn && this.onDeleteCallback) {
+        this.onDeleteCallback(btn.dataset.id);
+      }
+    });
   }
 
   render(photos, options = {}) {
@@ -31,16 +38,6 @@ class PhotoGrid {
 
     // Lazy load images with shared observer
     this.container.querySelectorAll('img[data-src]').forEach(img => this.observer.observe(img));
-
-    // Bind delete buttons
-    if (editable && onDelete) {
-      this.container.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.dataset.id;
-          if (this.onDeleteCallback) this.onDeleteCallback(id);
-        });
-      });
-    }
   }
 
   photoCard(photo, editable, idx) {
