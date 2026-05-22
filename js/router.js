@@ -50,3 +50,5 @@ class Router {
     this.pages[name] = page;
   }
 }
+
+window.router = new Router();
