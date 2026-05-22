@@ -17,7 +17,7 @@ async function api(path, options = {}) {
 }
 
 const apiClient = {
-  login: (email, password) => api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login: (password) => api('/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
   getPhotos: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return api(`/photos?${qs}`);

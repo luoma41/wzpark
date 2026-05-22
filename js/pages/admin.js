@@ -15,7 +15,6 @@ class AdminPage {
     container.innerHTML = `
       <div class="max-w-sm mx-auto mt-20 px-4">
         <h2 class="text-2xl font-light text-charcoal mb-6 text-center">管理员登录</h2>
-        <input type="email" id="login-email" placeholder="邮箱" class="w-full px-4 py-3 border border-sand rounded-lg mb-3">
         <input type="password" id="login-password" placeholder="密码" class="w-full px-4 py-3 border border-sand rounded-lg mb-4"
                onkeypress="if(event.key==='Enter') adminPage.login()">
         <button onclick="adminPage.login()" class="w-full py-3 bg-moss text-white rounded-lg hover:bg-moss/90 transition-colors">登录</button>
@@ -25,11 +24,10 @@ class AdminPage {
   }
 
   async login() {
-    const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
     try {
-      const data = await apiClient.login(email, password);
+      const data = await apiClient.login(password);
       setToken(data.token);
       window.location.reload();
     } catch (err) {
