@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wz park - 旅行相册</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'warm-white': '#FAF9F7',
+            'charcoal': '#2D2D2D',
+            'mid-gray': '#6B6B6B',
+            'moss': '#5A7D5A',
+            'sand': '#D4C5B5',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <style>
+    body { background-color: #FAF9F7; color: #2D2D2D; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .page { display: none; animation: fadeIn 0.2s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav id="navbar" class="fixed top-0 w-full bg-warm-white/90 backdrop-blur-sm border-b border-sand/30 z-50"></nav>
+
+  <!-- Page Container -->
+  <main class="pt-16 min-h-screen">
+    <!-- Home Page -->
+    <div id="page-home" class="page active"></div>
+    <!-- Album Page -->
+    <div id="page-album" class="page"></div>
+    <!-- Share Page -->
+    <div id="page-share" class="page"></div>
+    <!-- Admin Page -->
+    <div id="page-admin" class="page"></div>
+    <!-- Upload Page -->
+    <div id="page-upload" class="page"></div>
+  </main>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- EXIF Reader -->
+  <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
+
+  <!-- App Modules -->
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/components/navbar.js"></script>
+  <script src="/js/components/map.js"></script>
+  <script src="/js/components/photoGrid.js"></script>
+  <script src="/js/pages/home.js"></script>
+  <script src="/js/pages/album.js"></script>
+  <script src="/js/pages/share.js"></script>
+  <script src="/js/pages/admin.js"></script>
+  <script src="/js/pages/upload.js"></script>
+  <script>
+    // Initialize app
+    document.addEventListener('DOMContentLoaded', () => {
+      window.router = new Router();
+      window.router.init();
+    });
+  </script>
+</body>
+</html>
