@@ -16,7 +16,7 @@ const handler = async (req, res) => {
         statement: [{
           action: ['name/cos:PutObject', 'name/cos:InitiateMultipartUpload'],
           effect: 'allow',
-          resource: [`qcs::cos:${process.env.COS_REGION}:uid/${process.env.COS_APPID}:${process.env.COS_APPID}-${process.env.COS_BUCKET}/*`],
+          resource: [`qcs::cos:${process.env.COS_REGION}:uid/${process.env.COS_APPID}:${process.env.COS_BUCKET}-${process.env.COS_APPID}/*`],
         }],
       },
       durationSeconds: 3600,
@@ -27,7 +27,7 @@ const handler = async (req, res) => {
       tmpSecretKey: data.credentials.tmpSecretKey,
       sessionToken: data.credentials.sessionToken,
       expiredTime: data.expiredTime,
-      bucket: `${process.env.COS_APPID}-${process.env.COS_BUCKET}`,
+      bucket: `${process.env.COS_BUCKET}-${process.env.COS_APPID}`,
       region: process.env.COS_REGION,
     });
   } catch (err) {
