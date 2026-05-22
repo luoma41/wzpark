@@ -33,3 +33,5 @@ function logout() {
   window.location.hash = '/';
   location.reload();
 }
+
+new Navbar();
