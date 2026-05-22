@@ -10,11 +10,18 @@ const handler = async (req, res) => {
   const { id } = req.query;
   if (!id) return sendError(res, 400, 'ID required');
 
+  let objectId;
+  try {
+    objectId = new ObjectId(id);
+  } catch {
+    return sendError(res, 400, 'Invalid photo ID format');
+  }
+
   const db = await getDb();
   const photos = db.collection('photos');
   const albums = db.collection('albums');
 
-  const photo = await photos.findOne({ _id: new ObjectId(id) });
+  const photo = await photos.findOne({ _id: objectId });
   if (!photo) return sendError(res, 404, 'Photo not found');
 
   // Delete from COS
@@ -25,10 +32,13 @@ const handler = async (req, res) => {
     console.error('COS delete error:', err);
   }
 
-  // Update album count
-  await albums.updateOne({ city: photo.city }, { $inc: { photoCount: -1 } });
+  // Update album count (prevent negative)
+  await albums.updateOne(
+    { city: photo.city, photoCount: { $gt: 0 } },
+    { $inc: { photoCount: -1 } }
+  );
 
-  await photos.deleteOne({ _id: new ObjectId(id) });
+  await photos.deleteOne({ _id: objectId });
   sendSuccess(res, { deleted: true });
 };
 

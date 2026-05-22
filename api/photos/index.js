@@ -18,12 +18,18 @@ const handler = async (req, res) => {
   }
 
   if (req.method === 'POST') {
+    if (!req.body || (typeof req.body !== 'object' && !Array.isArray(req.body))) {
+      return sendError(res, 400, 'Request body must be an object or array');
+    }
+
     const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return sendError(res, 400, 'No photos provided');
+
     const now = new Date();
 
     for (const item of items) {
       if (!item.filename || !item.cosUrl || !item.city) {
-        return sendError(res, 400, 'Missing required fields');
+        return sendError(res, 400, 'Missing required fields: filename, cosUrl, city');
       }
       item.createdAt = now;
       item.albumId = item.albumId || null;
@@ -43,7 +49,7 @@ const handler = async (req, res) => {
         await albums.insertOne({
           city,
           province: items.find(i => i.city === city)?.province || '',
-          coverPhotoId: items.find(i => i.city === city)?._id || null,
+          coverPhotoId: null,
           description: '',
           photoCount: count,
           createdAt: now,
