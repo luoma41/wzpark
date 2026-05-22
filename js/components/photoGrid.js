@@ -1,6 +1,16 @@
 class PhotoGrid {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.dataset.src;
+          img.removeAttribute('data-src');
+          this.observer.unobserve(img);
+        }
+      });
+    });
   }
 
   render(photos, options = {}) {
@@ -20,18 +30,7 @@ class PhotoGrid {
     `;
 
     // Lazy load images with shared observer
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target;
-          img.src = img.dataset.src;
-          img.removeAttribute('data-src');
-          observer.unobserve(img);
-        }
-      });
-    });
-
-    this.container.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
+    this.container.querySelectorAll('img[data-src]').forEach(img => this.observer.observe(img));
 
     // Bind delete buttons
     if (editable && onDelete) {
