@@ -18,7 +18,9 @@ class Navbar {
               <a href="#/upload" class="text-sm text-moss hover:text-charcoal transition-colors">上传</a>
               <a href="#/admin" class="text-sm text-mid-gray hover:text-charcoal transition-colors">管理</a>
               <button onclick="logout()" class="text-sm text-mid-gray hover:text-red-600 transition-colors">退出</button>
-            ` : ''}
+            ` : `
+              <a href="#/admin" class="text-sm text-mid-gray hover:text-charcoal transition-colors">管理员入口</a>
+            `}
           </div>
         </div>
       </div>
