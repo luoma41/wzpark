@@ -12,8 +12,13 @@ async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
+    if (req.user?.role !== 'admin') return sendError(res, 403, 'Admin access required');
+
     const { city, description, coverPhotoId } = req.body || {};
     if (!city) return sendError(res, 400, 'City required');
+
+    const existing = await albums.findOne({ city });
+    if (!existing) return sendError(res, 404, 'Album not found');
 
     const update = { updatedAt: new Date() };
     if (description !== undefined) update.description = description;
