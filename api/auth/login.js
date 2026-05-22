@@ -11,6 +11,6 @@ module.exports = async (req, res) => {
   const valid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
   if (!valid) return sendError(res, 401, 'Invalid credentials');
 
-  const token = jwt.sign({ email, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   sendSuccess(res, { token });
 };
