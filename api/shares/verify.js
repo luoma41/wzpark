@@ -20,6 +20,8 @@ module.exports = async (req, res) => {
   await shares.updateOne({ token }, { $inc: { viewCount: 1 } });
 
   const album = await albums.findOne({ _id: share.albumId });
+  if (!album) return sendError(res, 404, 'Album not found');
+
   const photoList = await photos.find({ city: album.city }).sort({ takenAt: -1 }).toArray();
 
   sendSuccess(res, { album, photos: photoList });
