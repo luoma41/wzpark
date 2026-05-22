@@ -5,6 +5,8 @@ const { sendSuccess, sendError } = require('../../lib/utils');
 const handler = async (req, res) => {
   if (req.method !== 'GET') return sendError(res, 405, 'Method not allowed');
 
+  if (req.user?.role !== 'admin') return sendError(res, 403, 'Admin access required');
+
   const cos = new COS({ SecretId: process.env.COS_SECRET_ID, SecretKey: process.env.COS_SECRET_KEY });
 
   try {
@@ -29,6 +31,7 @@ const handler = async (req, res) => {
       region: process.env.COS_REGION,
     });
   } catch (err) {
+    console.error('STS credential error:', err);
     sendError(res, 500, 'Failed to get STS credentials');
   }
 };
