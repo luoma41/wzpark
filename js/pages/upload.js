@@ -66,6 +66,7 @@ class UploadPage {
         }
       } catch (e) { console.log('No EXIF for', file.name); }
 
+      photo.objectUrl = URL.createObjectURL(file);
       this.files.push(photo);
     }
 
@@ -104,7 +105,7 @@ class UploadPage {
     el.innerHTML = this.files.map((p, idx) => `
       <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-sand/30">
         <div class="w-12 h-12 bg-sand/20 rounded flex-shrink-0 overflow-hidden">
-          <img src="${URL.createObjectURL(p.file)}" class="w-full h-full object-cover">
+          <img src="${p.objectUrl}" class="w-full h-full object-cover">
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-sm text-charcoal truncate">${p.file.name}</p>
@@ -127,6 +128,7 @@ class UploadPage {
   }
 
   removeFile(idx) {
+    if (this.files[idx].objectUrl) URL.revokeObjectURL(this.files[idx].objectUrl);
     this.files.splice(idx, 1);
     this.renderPreview();
   }
@@ -160,6 +162,9 @@ class UploadPage {
 
       // 2. Save metadata to MongoDB
       await apiClient.createPhotos(uploaded);
+
+      // After successful upload, before navigating
+      this.files.forEach(p => { if (p.objectUrl) URL.revokeObjectURL(p.objectUrl); });
 
       alert(`成功上传 ${uploaded.length} 张照片`);
       window.router.navigate('/');
