@@ -40,7 +40,7 @@ const handler = async (req, res) => {
     });
   } catch (err) {
     console.error('STS credential error:', err);
-    sendError(res, 500, 'Failed to get STS credentials');
+    sendError(res, 500, `Failed to get STS credentials: ${err.message || err}`);
   }
 };
 
