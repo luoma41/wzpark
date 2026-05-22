@@ -1,6 +1,6 @@
 const STS = require('qcloud-cos-sts');
-const { authMiddleware } = require('../../lib/auth');
-const { sendSuccess, sendError } = require('../../lib/utils');
+const { authMiddleware } = require('../lib/auth');
+const { sendSuccess, sendError } = require('../lib/utils');
 
 const handler = async (req, res) => {
   if (req.method !== 'GET') return sendError(res, 405, 'Method not allowed');
