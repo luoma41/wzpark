@@ -7,8 +7,8 @@ class AlbumPage {
 
   async onMount(params) {
     const cityId = decodeURIComponent(params.id);
-    this.photoGrid = new PhotoGrid('album-photos');
     this.renderLayout(cityId);
+    this.photoGrid = new PhotoGrid('album-photos');
     await this.loadAlbum(cityId);
   }
 
@@ -59,7 +59,7 @@ class AlbumPage {
       this.photos = data.photos;
 
       document.getElementById('album-description').textContent = this.album.description || '暂无描述';
-      this.photoGrid.render(this.photos, { editable: !!getToken(), onDelete: 'albumPage.deletePhoto' });
+      this.photoGrid.render(this.photos, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
 
     } catch (err) {
       console.error('Failed to load album:', err);
@@ -102,7 +102,7 @@ class AlbumPage {
     try {
       await apiClient.deletePhoto(id);
       this.photos = this.photos.filter(p => p._id !== id);
-      this.photoGrid.render(this.photos, { editable: !!getToken(), onDelete: 'albumPage.deletePhoto' });
+      this.photoGrid.render(this.photos, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
     } catch (err) {
       alert('删除失败: ' + err.message);
     }
