@@ -73,14 +73,14 @@ class MapComponent {
         }),
       });
 
-      // Artistic city markers (low zoom)
+      // Frosted glass card markers (low zoom)
       this.cityMarkers = L.layerGroup();
       cityPoints.forEach(d => {
         const marker = this.createCityMarker(d);
         this.cityMarkers.addLayer(marker);
       });
 
-      // Cluster markers (high zoom) — custom styled
+      // Cluster markers (high zoom)
       this.markerCluster = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
@@ -104,25 +104,25 @@ class MapComponent {
   }
 
   createCityMarker(d) {
-    const size = Math.min(28 + d.count * 4, 44);
-    const iconSize = size + 12; // extra space for shadow/scale
+    const sphereSize = Math.min(24 + d.count * 1.5, 36);
+    const padX = 12;
+    const textW = d.city.length * 11;
+    const cardW = Math.max(sphereSize, textW) + padX * 2;
+    const cardH = 8 + sphereSize + 5 + 16 + 6 + 8; // padTop + sphere + gap + label + padBot + arrow
 
     const html = `
-      <div class="travel-marker" style="width:${size}px;height:${size}px;">
-        <svg viewBox="0 0 24 24" width="${size * 0.52}" height="${size * 0.52}">
-          <rect x="2" y="4" width="20" height="15" rx="3" stroke-width="1.4" fill="none"/>
-          <circle cx="12" cy="11.5" r="4" stroke-width="1.4" fill="none"/>
-          <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>
-        </svg>
+      <div class="travel-card">
+        <div class="travel-sphere" style="width:${sphereSize}px;height:${sphereSize}px;"></div>
+        <div class="travel-card-label">${d.city}</div>
       </div>`;
 
     const icon = L.divIcon({
       className: 'travel-marker-wrapper',
       html,
-      iconSize: [iconSize, iconSize],
-      iconAnchor: [iconSize / 2, iconSize / 2],
-      popupAnchor: [0, -iconSize / 2],
-      tooltipAnchor: [0, -iconSize / 2],
+      iconSize: [cardW, cardH],
+      iconAnchor: [cardW / 2, cardH],
+      popupAnchor: [0, -cardH],
+      tooltipAnchor: [0, -cardH],
     });
 
     const marker = L.marker([d.lat, d.lng], { icon });
@@ -135,11 +135,16 @@ class MapComponent {
   }
 
   createPinIcon(count) {
-    const size = Math.min(24 + count * 2, 34);
+    const size = Math.min(28 + count * 1.5, 40);
+    const innerSize = size - 8;
+
     const html = `
       <div class="travel-pin" style="width:${size}px;height:${size}px;">
-        <span class="travel-pin-count">${count}</span>
+        <div class="travel-pin-inner" style="width:${innerSize}px;height:${innerSize}px;">
+          <span class="travel-pin-count">${count}</span>
+        </div>
       </div>`;
+
     return L.divIcon({
       className: 'travel-pin-wrapper',
       html,
@@ -151,8 +156,17 @@ class MapComponent {
 
   createClusterIcon(cluster) {
     const count = cluster.getChildCount();
-    const size = count < 10 ? 36 : count < 30 ? 42 : 48;
-    const html = `<div class="travel-cluster" style="width:${size}px;height:${size}px;"><span>${count}</span></div>`;
+    const size = count < 10 ? 40 : count < 30 ? 48 : 56;
+    const innerSize = size - 10;
+    const fontSize = count < 100 ? 14 : 12;
+
+    const html = `
+      <div class="travel-cluster" style="width:${size}px;height:${size}px;">
+        <div class="travel-cluster-inner" style="width:${innerSize}px;height:${innerSize}px;">
+          <span class="travel-cluster-count" style="font-size:${fontSize}px;">${count}</span>
+        </div>
+      </div>`;
+
     return L.divIcon({
       className: 'travel-cluster-wrapper',
       html,
