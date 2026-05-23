@@ -10,9 +10,15 @@ async function api(path, options = {}) {
   };
 
   const res = await fetch(url, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    const text = await res.text().catch(() => '');
+    data = { error: text || `HTTP ${res.status}` };
+  }
 
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(data.error || data.message || `请求失败 (${res.status})`);
   return data.data;
 }
 

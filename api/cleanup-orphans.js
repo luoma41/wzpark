@@ -42,7 +42,8 @@ async function handler(req, res) {
     allCosKeys = (data.Contents || []).map(item => item.Key);
   } catch (err) {
     console.error('COS getBucket error:', err);
-    return sendError(res, 500, `Failed to list COS objects: ${err.message}`);
+    const errMsg = err?.message || err?.error || err?.code || JSON.stringify(err);
+    return sendError(res, 500, `COS list failed: ${errMsg}. Check that COS_SECRET_ID/COS_SECRET_KEY has ListBucket permission.`);
   }
 
   const orphans = allCosKeys.filter(key => !usedKeys.has(key));
