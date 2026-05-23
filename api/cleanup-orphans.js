@@ -1,0 +1,76 @@
+const { getDb } = require('../../lib/db');
+const { cos, bucket, region } = require('../../lib/cos');
+const { authMiddleware } = require('../../lib/auth');
+const { sendSuccess, sendError } = require('../../lib/utils');
+
+async function handler(req, res) {
+  if (req.method !== 'POST') return sendError(res, 405, 'Method not allowed');
+  if (req.user?.role !== 'admin') return sendError(res, 403, 'Admin access required');
+
+  const dryRun = req.body?.dryRun !== false;
+
+  const db = await getDb();
+  const photos = db.collection('photos');
+
+  const photoDocs = await photos.find({}, { projection: { cosUrl: 1 } }).toArray();
+  const usedKeys = new Set(photoDocs.map(p => {
+    try {
+      const url = new URL(p.cosUrl);
+      return decodeURIComponent(url.pathname.slice(1));
+    } catch {
+      return null;
+    }
+  }).filter(Boolean));
+
+  if (usedKeys.size === 0) {
+    return sendError(res, 400, 'No photos found in database. Cleanup aborted to prevent accidental deletion.');
+  }
+
+  const allCosKeys = [];
+  let marker;
+  do {
+    const data = await cos.getBucket({
+      Bucket: bucket,
+      Region: region,
+      Prefix: 'photos/',
+      Marker: marker,
+      MaxKeys: 1000,
+    });
+    if (data.Contents) {
+      allCosKeys.push(...data.Contents.map(item => item.Key));
+    }
+    marker = data.NextMarker;
+  } while (marker);
+
+  const orphans = allCosKeys.filter(key => !usedKeys.has(key));
+
+  let deleted = [];
+  if (!dryRun && orphans.length > 0) {
+    const batchSize = 1000;
+    for (let i = 0; i < orphans.length; i += batchSize) {
+      const batch = orphans.slice(i, i + batchSize);
+      try {
+        await cos.deleteMultipleObject({
+          Bucket: bucket,
+          Region: region,
+          Objects: batch.map(key => ({ Key: key })),
+        });
+        deleted.push(...batch);
+      } catch (err) {
+        console.error('Batch delete error:', err);
+      }
+    }
+  }
+
+  return sendSuccess(res, {
+    dryRun,
+    totalCosFiles: allCosKeys.length,
+    totalDbFiles: usedKeys.size,
+    orphansFound: orphans.length,
+    deleted: deleted.length,
+    deletedKeys: deleted,
+    orphanKeys: dryRun ? orphans : undefined,
+  });
+}
+
+module.exports = authMiddleware(handler);
