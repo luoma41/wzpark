@@ -84,7 +84,7 @@ class AdminPage {
       const preview = await api('/cleanup-orphans', { method: 'POST', body: JSON.stringify({ dryRun: true }) });
 
       if (preview.data.orphansFound === 0) {
-        resultEl.innerHTML = '<p class="text-sm text-moss">未发现孤儿文件，COS 和数据库完全一致。</p>';
+        resultEl.innerHTML = `<p class="text-sm text-moss">${preview.data.message || '未发现孤儿文件，COS 和数据库完全一致。'}</p>`;
         return;
       }
 

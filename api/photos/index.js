@@ -114,7 +114,13 @@ const handler = async (req, res) => {
       console.log('Recalculated photoCount for', safeCity, ':', actualCount);
     }
 
-    return sendSuccess(res, { insertedIds: result.insertedIds, version: '2.1', albumsUpdated: Object.keys(cityGroups) });
+    const finalAlbums = await albums.find({}, { projection: { city: 1, photoCount: 1 } }).toArray();
+    return sendSuccess(res, {
+      insertedIds: result.insertedIds,
+      version: '2.2',
+      albumsUpdated: Object.keys(cityGroups),
+      diagnostics: { finalAlbums }
+    });
   }
 
   return sendError(res, 405, 'Method not allowed');
