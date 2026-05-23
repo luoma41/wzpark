@@ -104,14 +104,15 @@ class MapComponent {
   }
 
   createCityMarker(d) {
-    const textW = d.city.length * 12;
+    const label = d.city.replace(/市$/, '');
+    const textW = label.length * 12;
     const padX = 14;
     const cardW = textW + padX * 2;
     const cardH = 28 + 8; // label height + padTop + padBot + arrow
 
     const html = `
       <div class="travel-card">
-        <div class="travel-card-label">${d.city}</div>
+        <div class="travel-card-label">${label}</div>
       </div>`;
 
     const icon = L.divIcon({
