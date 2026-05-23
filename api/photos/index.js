@@ -48,20 +48,20 @@ const handler = async (req, res) => {
         console.warn('Skipping album creation for invalid city:', city);
         continue;
       }
-      const album = await albums.findOne({ city: safeCity });
-      if (album) {
-        await albums.updateOne({ city: safeCity }, { $inc: { photoCount: count }, $set: { updatedAt: now } });
-      } else {
-        await albums.insertOne({
-          city: safeCity,
-          province: items.find(i => i.city === city)?.province || '',
-          coverPhotoId: null,
-          description: '',
-          photoCount: count,
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
+      await albums.updateOne(
+        { city: safeCity },
+        {
+          $inc: { photoCount: count },
+          $set: { updatedAt: now },
+          $setOnInsert: {
+            province: items.find(i => i.city === city)?.province || '',
+            coverPhotoId: null,
+            description: '',
+            createdAt: now,
+          },
+        },
+        { upsert: true }
+      );
     }
 
     return sendSuccess(res, { insertedIds: result.insertedIds });
