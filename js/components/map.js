@@ -104,15 +104,13 @@ class MapComponent {
   }
 
   createCityMarker(d) {
-    const sphereSize = Math.min(24 + d.count * 1.5, 36);
-    const padX = 12;
-    const textW = d.city.length * 11;
-    const cardW = Math.max(sphereSize, textW) + padX * 2;
-    const cardH = 8 + sphereSize + 5 + 16 + 6 + 8; // padTop + sphere + gap + label + padBot + arrow
+    const textW = d.city.length * 12;
+    const padX = 14;
+    const cardW = textW + padX * 2;
+    const cardH = 28 + 8; // label height + padTop + padBot + arrow
 
     const html = `
       <div class="travel-card">
-        <div class="travel-sphere" style="width:${sphereSize}px;height:${sphereSize}px;"></div>
         <div class="travel-card-label">${d.city}</div>
       </div>`;
 
@@ -136,13 +134,10 @@ class MapComponent {
 
   createPinIcon(count) {
     const size = Math.min(28 + count * 1.5, 40);
-    const innerSize = size - 8;
 
     const html = `
       <div class="travel-pin" style="width:${size}px;height:${size}px;">
-        <div class="travel-pin-inner" style="width:${innerSize}px;height:${innerSize}px;">
-          <span class="travel-pin-count">${count}</span>
-        </div>
+        <span class="travel-pin-count">${count}</span>
       </div>`;
 
     return L.divIcon({
@@ -157,14 +152,11 @@ class MapComponent {
   createClusterIcon(cluster) {
     const count = cluster.getChildCount();
     const size = count < 10 ? 40 : count < 30 ? 48 : 56;
-    const innerSize = size - 10;
     const fontSize = count < 100 ? 14 : 12;
 
     const html = `
       <div class="travel-cluster" style="width:${size}px;height:${size}px;">
-        <div class="travel-cluster-inner" style="width:${innerSize}px;height:${innerSize}px;">
-          <span class="travel-cluster-count" style="font-size:${fontSize}px;">${count}</span>
-        </div>
+        <span class="travel-cluster-count" style="font-size:${fontSize}px;">${count}</span>
       </div>`;
 
     return L.divIcon({
