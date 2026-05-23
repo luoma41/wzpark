@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 
 const app = express();
 
@@ -14,16 +14,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Import existing Vercel API handlers (compatible with Express req/res)
-const photosIndex = require('../../api/photos/index');
-const photosById = require('../../api/photos/[id]');
-const albumsIndex = require('../../api/albums/index');
-const albumsById = require('../../api/albums/[id]');
-const sharesIndex = require('../../api/shares/index');
-const sharesVerify = require('../../api/shares/verify');
-const authLogin = require('../../api/auth/login');
-const uploadSts = require('../../api/upload-sts');
-const mapData = require('../../api/map-data');
+// Import existing Vercel API handlers (CommonJS, compatible with Express req/res)
+import photosIndex from '../../api/photos/index.js';
+import photosById from '../../api/photos/[id].js';
+import albumsIndex from '../../api/albums/index.js';
+import albumsById from '../../api/albums/[id].js';
+import sharesIndex from '../../api/shares/index.js';
+import sharesVerify from '../../api/shares/verify.js';
+import authLogin from '../../api/auth/login.js';
+import uploadSts from '../../api/upload-sts.js';
+import mapData from '../../api/map-data.js';
 
 // Mount routes
 app.all('/api/photos', photosIndex);
@@ -49,4 +49,4 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-module.exports = app;
+export default app;
