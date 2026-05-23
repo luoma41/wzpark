@@ -40,7 +40,7 @@ class MapComponent {
       const [albums, mapData, geoJson, cityCoords] = await Promise.all([
         apiClient.getAlbums(),
         apiClient.getMapData(),
-        fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(r => r.json()),
+        fetch('/js/data/china-outline.json').then(r => r.json()),
         fetch('/js/data/cityCoords.json').then(r => r.json()),
       ]);
 
