@@ -114,7 +114,7 @@ const handler = async (req, res) => {
       console.log('Recalculated photoCount for', safeCity, ':', actualCount);
     }
 
-    return sendSuccess(res, { insertedIds: result.insertedIds });
+    return sendSuccess(res, { insertedIds: result.insertedIds, version: '2.1', albumsUpdated: Object.keys(cityGroups) });
   }
 
   return sendError(res, 405, 'Method not allowed');
