@@ -15,37 +15,43 @@ class AlbumPage {
   renderLayout(cityId) {
     const container = document.getElementById('page-album');
     const isAdmin = !!getToken();
+    const displayCity = cityId.replace(/市$/, '');
 
     container.innerHTML = `
-      <div class="max-w-5xl mx-auto px-4 py-8">
-        <a href="#/" class="text-sm text-mid-gray hover:text-moss transition-colors mb-6 inline-block">← 返回首页</a>
+      <div class="max-w-6xl mx-auto px-6 py-10">
+        <a href="#/" class="inline-flex items-center gap-1.5 text-xs tracking-widest text-mid-gray hover:text-moss transition-colors mb-10 group">
+          <span class="inline-block transition-transform duration-300 group-hover:-translate-x-1">&larr;</span>
+          返回首页
+        </a>
 
-        <div class="mb-8">
-          <h1 class="text-3xl font-light text-charcoal mb-2">${cityId}</h1>
-          <div id="album-description" class="text-mid-gray leading-relaxed"></div>
+        <header class="mb-14">
+          <p class="editorial-overline">相册</p>
+          <div class="editorial-rule"></div>
+          <h1 class="text-4xl md:text-5xl font-light text-charcoal leading-tight tracking-tight mb-4">${displayCity}</h1>
+          <div id="album-description" class="text-base md:text-lg text-mid-gray leading-relaxed max-w-2xl"></div>
           ${isAdmin ? `
-            <div class="mt-4 flex gap-3">
-              <button onclick="albumPage.editDescription()" class="text-sm px-4 py-2 border border-sand rounded-lg hover:bg-sand/20 transition-colors">编辑说明</button>
-              <button onclick="albumPage.createShare()" class="text-sm px-4 py-2 bg-moss text-white rounded-lg hover:bg-moss/90 transition-colors">分享相册</button>
+            <div class="mt-6 flex gap-4">
+              <button onclick="albumPage.editDescription()" class="text-xs tracking-widest text-mid-gray hover:text-charcoal border-b border-transparent hover:border-mid-gray pb-0.5 transition-all">编辑说明</button>
+              <button onclick="albumPage.createShare()" class="text-xs tracking-widest text-moss hover:text-charcoal border-b border-transparent hover:border-moss pb-0.5 transition-all">分享相册</button>
             </div>
           ` : ''}
-        </div>
+        </header>
 
         <div id="album-photos"></div>
       </div>
 
       <!-- Share Modal -->
-      <div id="share-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div class="bg-warm-white rounded-xl p-6 w-full max-w-sm mx-4">
+      <div id="share-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-warm-white rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
           <h3 class="text-lg font-medium mb-4">生成分享链接</h3>
-          <input type="text" id="share-password" placeholder="4位数字密码" maxlength="4" class="w-full px-3 py-2 border border-sand rounded-lg mb-3 text-center tracking-widest">
+          <input type="text" id="share-password" placeholder="4位数字密码" maxlength="4" class="w-full px-3 py-2 border border-sand rounded-lg mb-3 text-center tracking-widest text-lg">
           <div class="flex gap-2">
-            <button onclick="albumPage.closeShareModal()" class="flex-1 py-2 border border-sand rounded-lg hover:bg-sand/20">取消</button>
-            <button onclick="albumPage.confirmShare()" class="flex-1 py-2 bg-moss text-white rounded-lg hover:bg-moss/90">生成</button>
+            <button onclick="albumPage.closeShareModal()" class="flex-1 py-2 border border-sand rounded-lg hover:bg-sand/20 transition-colors text-sm">取消</button>
+            <button onclick="albumPage.confirmShare()" class="flex-1 py-2 bg-moss text-white rounded-lg hover:bg-moss/90 transition-colors text-sm">生成</button>
           </div>
           <div id="share-result" class="mt-3 hidden">
             <input id="share-url" readonly class="w-full text-xs bg-gray-50 px-2 py-1 rounded mb-2">
-            <button onclick="navigator.clipboard.writeText(document.getElementById('share-url').value)" class="text-xs text-moss">复制链接</button>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('share-url').value)" class="text-xs text-moss hover:underline">复制链接</button>
           </div>
         </div>
       </div>

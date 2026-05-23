@@ -18,16 +18,22 @@ class HomePage {
   renderLayout() {
     const container = document.getElementById('page-home');
     container.innerHTML = `
-      <div class="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)]">
+      <div class="flex flex-col lg:flex-row h-[calc(100vh-3rem)]">
         <!-- Map Section -->
         <div class="w-full lg:w-3/5 h-1/2 lg:h-full relative">
           <div id="home-map" class="w-full h-full"></div>
         </div>
-        <!-- Album List Section -->
-        <div class="w-full lg:w-2/5 h-1/2 lg:h-full overflow-y-auto border-l border-sand/30 bg-warm-white">
-          <div class="p-6">
-            <h2 class="text-sm font-medium text-mid-gray uppercase tracking-wider mb-4">旅行足迹</h2>
-            <div id="album-list" class="space-y-3"></div>
+        <!-- Editorial Album List -->
+        <div class="w-full lg:w-2/5 h-1/2 lg:h-full overflow-y-auto border-l border-sand/20 bg-warm-white">
+          <div class="p-8 lg:p-10">
+            <div class="mb-8">
+              <p class="editorial-overline">旅行足迹</p>
+              <div class="editorial-rule"></div>
+              <p class="text-xs text-mid-gray leading-relaxed max-w-xs">
+                用镜头记录旅途中的每一个瞬间
+              </p>
+            </div>
+            <div id="album-list" class="space-y-6"></div>
           </div>
         </div>
       </div>
@@ -40,24 +46,31 @@ class HomePage {
       const listEl = document.getElementById('album-list');
 
       if (this.albums.length === 0) {
-        listEl.innerHTML = '<p class="text-mid-gray text-sm">还没有上传照片</p>';
+        listEl.innerHTML = '<p class="text-mid-gray/50 text-sm italic py-12 text-center">还没有相册，上传你的第一张照片吧</p>';
         return;
       }
 
       listEl.innerHTML = this.albums.map(album => `
         <a href="#/album/${encodeURIComponent(album.city)}"
-           class="block group p-3 rounded-lg hover:bg-sand/20 transition-colors">
-          <div class="flex items-center gap-3">
-            <div class="w-16 h-16 rounded-md bg-sand/30 overflow-hidden flex-shrink-0">
-              ${album.coverPhotoId ? `
-                <img src="${album.coverUrl || ''}" alt="" class="w-full h-full object-cover">
-              ` : '<div class="w-full h-full flex items-center justify-center text-xs text-mid-gray">无封面</div>'}
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="text-charcoal font-medium truncate group-hover:text-moss transition-colors">${album.city}</h3>
-              <p class="text-xs text-mid-gray">${album.province} · ${album.photoCount} 张</p>
-              ${album.description ? `<p class="text-xs text-mid-gray truncate mt-0.5">${album.description}</p>` : ''}
-            </div>
+           class="block group">
+          <div class="aspect-[16/9] rounded-lg overflow-hidden bg-sand/20 mb-3">
+            ${album.coverPhotoId ? `
+              <img src="${album.coverUrl || ''}" alt="${album.city}"
+                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]">
+            ` : `
+              <div class="w-full h-full flex items-center justify-center text-mid-gray text-sm">暂无封面</div>
+            `}
+          </div>
+          <div>
+            <h3 class="text-lg font-light text-charcoal leading-tight group-hover:text-moss transition-colors">
+              ${album.city.replace(/市$/, '')}
+            </h3>
+            <p class="text-xs text-mid-gray mt-1">
+              ${album.province} <span class="mx-1.5 text-sand">|</span> ${album.photoCount} 张
+            </p>
+            ${album.description ? `
+              <p class="text-xs text-mid-gray/70 mt-2 leading-relaxed line-clamp-2">${album.description}</p>
+            ` : ''}
           </div>
         </a>
       `).join('');

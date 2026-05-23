@@ -7,21 +7,21 @@ class Navbar {
   render() {
     const token = getToken();
     this.el.innerHTML = `
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-14">
-          <a href="#/" class="text-lg font-medium tracking-wide text-charcoal hover:text-moss transition-colors">
+      <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+        <div class="flex justify-between items-center h-12">
+          <a href="#/" class="text-base font-medium tracking-wider text-charcoal hover:text-moss transition-colors">
             wz park
           </a>
-          <div class="flex items-center gap-4">
-            <a href="#/" class="text-sm text-mid-gray hover:text-charcoal transition-colors">首页</a>
+          <nav class="flex items-center gap-5">
+            <a href="#/" class="text-xs tracking-widest text-mid-gray hover:text-charcoal transition-colors">首页</a>
             ${token ? `
-              <a href="#/upload" class="text-sm text-moss hover:text-charcoal transition-colors">上传</a>
-              <a href="#/admin" class="text-sm text-mid-gray hover:text-charcoal transition-colors">管理</a>
-              <button onclick="logout()" class="text-sm text-mid-gray hover:text-red-600 transition-colors">退出</button>
+              <a href="#/upload" class="text-xs tracking-widest text-moss hover:text-charcoal transition-colors">上传</a>
+              <a href="#/admin" class="text-xs tracking-widest text-mid-gray hover:text-charcoal transition-colors">管理</a>
+              <button onclick="logout()" class="text-xs tracking-widest text-mid-gray hover:text-red-600 transition-colors">退出</button>
             ` : `
-              <a href="#/admin" class="text-sm text-mid-gray hover:text-charcoal transition-colors">管理员入口</a>
+              <a href="#/admin" class="text-xs tracking-widest text-mid-gray hover:text-charcoal transition-colors">管理</a>
             `}
-          </div>
+          </nav>
         </div>
       </div>
     `;
