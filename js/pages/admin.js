@@ -68,7 +68,7 @@ class AdminPage {
       console.error(err);
     }
   }
-
+}
 
 const adminPage = new AdminPage();
 window.router.register('admin', adminPage);
