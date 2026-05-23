@@ -9,15 +9,19 @@ class MapComponent {
   async init() {
     if (!this.container) return;
 
+    // China bounding box
+    const chinaBounds = L.latLngBounds([[18, 73], [54, 135]]);
+
     this.map = L.map(this.container, {
       center: [35.8617, 104.1954],
-      zoom: 4,
-      minZoom: 3,
+      zoom: 5,
+      minZoom: 4,
       maxZoom: 18,
+      maxBounds: chinaBounds,
+      maxBoundsViscosity: 0.8,
       zoomControl: false,
     });
 
-    // Light tile layer for minimal style
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       subdomains: 'abcd',
@@ -25,10 +29,8 @@ class MapComponent {
 
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
-    // Load China city-level GeoJSON and map data
     await this.loadMapData();
 
-    // Zoom listener to toggle between GeoJSON and markers
     this.map.on('zoomend', () => this.toggleLayerByZoom());
     this.toggleLayerByZoom();
   }
@@ -43,13 +45,11 @@ class MapComponent {
       this.cityData = {};
       mapData.forEach(d => { this.cityData[d.city] = d; });
 
-      // GeoJSON layer
       this.geoJsonLayer = L.geoJSON(geoJson, {
         style: (feature) => this.geoJsonStyle(feature),
         onEachFeature: (feature, layer) => this.onGeoJsonFeature(feature, layer),
       });
 
-      // Marker cluster layer
       this.markerCluster = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
@@ -74,21 +74,38 @@ class MapComponent {
     const cityName = feature.properties.name;
     const hasData = this.cityData[cityName];
     return {
-      fillColor: hasData ? '#5A7D5A' : '#E5E5E5',
-      weight: 1,
-      opacity: 0.3,
-      color: '#999',
-      fillOpacity: hasData ? 0.4 : 0.1,
+      fillColor: hasData ? '#3A6B3A' : '#E8E8E8',
+      weight: hasData ? 1.5 : 0.5,
+      opacity: 0.5,
+      color: hasData ? '#2D5A2D' : '#BBB',
+      fillOpacity: hasData ? 0.5 : 0.08,
     };
   }
 
   onGeoJsonFeature(feature, layer) {
     const cityName = feature.properties.name;
-    if (this.cityData[cityName]) {
+    const hasData = this.cityData[cityName];
+
+    if (hasData) {
       layer.on('click', () => {
         window.router.navigate(`/album/${encodeURIComponent(cityName)}`);
       });
-      layer.bindTooltip(`${cityName} (${this.cityData[cityName].count}张)`, { permanent: false });
+      layer.bindTooltip(`<b>${cityName}</b><br>${this.cityData[cityName].count}张照片`, {
+        permanent: false,
+        direction: 'top',
+        className: 'custom-map-tooltip',
+      });
+      // Hover effect
+      layer.on('mouseover', () => {
+        layer.setStyle({
+          fillColor: '#2D5A2D',
+          fillOpacity: 0.7,
+          weight: 2,
+        });
+      });
+      layer.on('mouseout', () => {
+        layer.setStyle(this.geoJsonStyle(feature));
+      });
     }
   }
 

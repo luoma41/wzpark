@@ -118,6 +118,19 @@ const handler = async (req, res) => {
       console.log('Recalculated photoCount for', safeCity, ':', actualCount);
     }
 
+    // Set cover photo for each updated city
+    for (const [city] of Object.entries(cityGroups)) {
+      const safeCity = city || '未知城市';
+      if (!safeCity || safeCity === '未知城市') continue;
+      const coverPhoto = await photos.findOne({ city: safeCity }, { sort: { takenAt: -1 }, projection: { cosUrl: 1 } });
+      if (coverPhoto) {
+        await albums.updateOne(
+          { city: safeCity },
+          { $set: { coverPhotoId: coverPhoto._id.toString(), coverUrl: coverPhoto.cosUrl } }
+        );
+      }
+    }
+
     const finalAlbums = await albums.find({}, { projection: { city: 1, photoCount: 1 } }).toArray();
     const albumIndexes = await albums.indexes();
     return sendSuccess(res, {

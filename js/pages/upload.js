@@ -2,19 +2,28 @@ class UploadPage {
   constructor() {
     this.files = [];
     this.stsCredentials = null;
+    this.citiesData = [];
+    this.editingIdx = new Set();
   }
 
   async onMount() {
     if (!getToken()) { window.router.navigate('/admin'); return; }
     this.renderLayout();
     this.loadSts();
+    // Load province-city data
+    try {
+      const res = await fetch('/js/data/cities.json');
+      this.citiesData = await res.json();
+    } catch (e) {
+      console.error('Failed to load cities data:', e);
+    }
   }
 
   renderLayout() {
     const container = document.getElementById('page-upload');
     container.innerHTML = `
       <div class="max-w-3xl mx-auto px-4 py-8">
-        <a href="#/admin" class="text-sm text-mid-gray hover:text-moss transition-colors mb-6 inline-block">← 返回管理</a>
+        <a href="#/admin" class="text-sm text-mid-gray hover:text-moss transition-colors mb-6 inline-block">&larr; 返回管理</a>
         <h2 class="text-2xl font-light text-charcoal mb-6">上传照片</h2>
 
         <div class="border-2 border-dashed border-sand rounded-xl p-8 text-center mb-6" id="drop-zone">
@@ -31,7 +40,6 @@ class UploadPage {
       </div>
     `;
 
-    // Drag & drop
     const dz = document.getElementById('drop-zone');
     dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('bg-sand/10'); });
     dz.addEventListener('dragleave', () => dz.classList.remove('bg-sand/10'));
@@ -56,7 +64,6 @@ class UploadPage {
     for (const file of newFiles) {
       const photo = { file, id: crypto.randomUUID(), city: null, province: null, lat: null, lng: null, takenAt: null, description: '' };
 
-      // Extract EXIF
       try {
         const exif = await this.readExif(file);
         if (exif?.GPSLatitude && exif?.GPSLongitude) {
@@ -92,6 +99,20 @@ class UploadPage {
     return new Date(d.replace(/:/g, '-') + 'T' + t);
   }
 
+  renderProvinceOptions(selectedProvince) {
+    return this.citiesData.map(p =>
+      `<option value="${p.name}" ${selectedProvince === p.name ? 'selected' : ''}>${p.name}</option>`
+    ).join('');
+  }
+
+  renderCityOptions(provinceName, selectedCity) {
+    const province = this.citiesData.find(p => p.name === provinceName);
+    if (!province) return '<option value="">请先选择省份</option>';
+    return province.cities.map(c =>
+      `<option value="${c}" ${selectedCity === c ? 'selected' : ''}>${c}</option>`
+    ).join('');
+  }
+
   renderPreview() {
     const el = document.getElementById('upload-preview');
     const btn = document.getElementById('upload-btn');
@@ -111,29 +132,52 @@ class UploadPage {
           <p class="text-sm text-charcoal truncate">${p.file.name}</p>
           <div class="flex items-center gap-2 mt-1">
             ${p.lat ? `<span class="text-xs text-moss bg-moss/10 px-1.5 py-0.5 rounded">已定位</span>` : `<span class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">无GPS</span>`}
-            <span id="city-badge-${idx}" class="text-xs text-mid-gray">${p.city || '未分类'}</span>
+            ${p.city ? `
+              <span id="city-badge-${idx}" class="text-xs text-mid-gray">${p.province || ''} ${p.city}</span>
+              <button onclick="uploadPage.startEdit(${idx})" class="text-xs text-mid-gray hover:text-moss hover:underline flex-shrink-0">修改</button>
+            ` : `
+              <span id="city-badge-${idx}" class="text-xs text-mid-gray">未分类</span>
+              <button onclick="uploadPage.startEdit(${idx})" class="text-xs text-moss hover:underline flex-shrink-0">选择位置</button>
+            `}
           </div>
+          ${this.editingIdx.has(idx) ? `
+          <div class="flex items-center gap-2 mt-2" id="edit-panel-${idx}">
+            <select id="prov-select-${idx}" onchange="uploadPage.onProvinceChange(${idx}, this.value)" class="text-xs px-2 py-1 border border-sand/50 rounded bg-white">
+              <option value="">选择省份</option>
+              ${this.renderProvinceOptions(p.province || '')}
+            </select>
+            <select id="city-select-${idx}" onchange="uploadPage.onCityChange(${idx}, this.value)" class="text-xs px-2 py-1 border border-sand/50 rounded bg-white">
+              <option value="">选择城市</option>
+              ${p.province ? this.renderCityOptions(p.province, p.city || '') : '<option value="">请先选省份</option>'}
+            </select>
+          </div>
+          ` : ''}
         </div>
-        ${!p.city ? `<button onclick="uploadPage.manualLocate(${idx})" class="text-xs text-moss hover:underline flex-shrink-0">手动定位</button>` : `<button onclick="uploadPage.editCity(${idx})" class="text-xs text-mid-gray hover:text-moss hover:underline flex-shrink-0">修改城市</button>`}
         <button onclick="uploadPage.removeFile(${idx})" class="text-xs text-red-500 hover:text-red-700 flex-shrink-0">删除</button>
       </div>
     `).join('');
   }
 
-  manualLocate(idx) {
-    const city = prompt('请输入城市名称（如：大理市）:');
-    if (!city) return;
-    this.files[idx].city = city;
-    document.getElementById(`city-badge-${idx}`).textContent = city;
+  startEdit(idx) {
+    this.editingIdx.add(idx);
     this.renderPreview();
   }
 
-  editCity(idx) {
-    const current = this.files[idx].city || '';
-    const city = prompt('修改城市名称:', current);
-    if (city === null) return;
-    this.files[idx].city = city || null;
-    document.getElementById(`city-badge-${idx}`).textContent = city || '未分类';
+  onProvinceChange(idx, provinceName) {
+    if (!provinceName) {
+      this.files[idx].province = null;
+      this.files[idx].city = null;
+    } else {
+      this.files[idx].province = provinceName;
+      this.files[idx].city = null;
+    }
+    this.renderPreview();
+  }
+
+  onCityChange(idx, cityName) {
+    if (!cityName) return;
+    this.files[idx].city = cityName;
+    this.editingIdx.delete(idx);
     this.renderPreview();
   }
 
@@ -148,7 +192,7 @@ class UploadPage {
 
     const missingCity = this.files.some(p => !p.city);
     if (missingCity) {
-      alert('部分照片缺少城市信息，请点击"手动定位"补充城市名称后再上传');
+      alert('部分照片缺少城市信息，请选择省份和城市后再上传');
       return;
     }
 
@@ -157,7 +201,6 @@ class UploadPage {
     btn.textContent = '上传中...';
 
     try {
-      // 1. Upload files to COS
       const uploaded = [];
       for (const photo of this.files) {
         const key = `photos/${Date.now()}-${photo.id}.${photo.file.name.split('.').pop()}`;
@@ -176,10 +219,8 @@ class UploadPage {
         });
       }
 
-      // 2. Save metadata to MongoDB
       await apiClient.createPhotos(uploaded);
 
-      // After successful upload, before navigating
       this.files.forEach(p => { if (p.objectUrl) URL.revokeObjectURL(p.objectUrl); });
 
       alert(`成功上传 ${uploaded.length} 张照片`);
