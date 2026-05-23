@@ -37,6 +37,19 @@ const handler = async (req, res) => {
 
     const result = await photos.insertMany(items);
 
+    // Drop problematic unique index on albums.city if it exists
+    try {
+      const indexes = await albums.indexes();
+      for (const idx of indexes) {
+        if (idx.unique && idx.key && idx.key.city !== undefined) {
+          await albums.dropIndex(idx.name);
+          console.log('Dropped unique city index:', idx.name);
+        }
+      }
+    } catch (e) {
+      console.log('Index check/drop error:', e.message);
+    }
+
     // Update album photoCount
     const cityGroups = {};
     items.forEach(p => { cityGroups[p.city] = (cityGroups[p.city] || 0) + 1; });
@@ -48,20 +61,28 @@ const handler = async (req, res) => {
         console.warn('Skipping album creation for invalid city:', city);
         continue;
       }
-      await albums.updateOne(
-        { city: safeCity },
-        {
-          $inc: { photoCount: count },
-          $set: { updatedAt: now },
-          $setOnInsert: {
-            province: items.find(i => i.city === city)?.province || '',
-            coverPhotoId: null,
-            description: '',
-            createdAt: now,
+      try {
+        await albums.updateOne(
+          { city: safeCity },
+          {
+            $inc: { photoCount: count },
+            $set: { updatedAt: now },
+            $setOnInsert: {
+              province: items.find(i => i.city === city)?.province || '',
+              coverPhotoId: null,
+              description: '',
+              createdAt: now,
+            },
           },
-        },
-        { upsert: true }
-      );
+          { upsert: true }
+        );
+      } catch (err) {
+        if (err.code === 11000) {
+          console.warn('Duplicate key ignored for city:', safeCity, err.message);
+        } else {
+          throw err;
+        }
+      }
     }
 
     return sendSuccess(res, { insertedIds: result.insertedIds });
