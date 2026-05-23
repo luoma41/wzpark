@@ -62,14 +62,17 @@ class UploadPage {
     const newFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
 
     for (const file of newFiles) {
-      const photo = { file, id: crypto.randomUUID(), city: null, province: null, lat: null, lng: null, takenAt: null, description: '' };
+      const photo = { file, id: crypto.randomUUID(), city: null, province: null, lat: null, lng: null, takenAt: null, takenYearMonth: '', description: '' };
 
       try {
         const exif = await this.readExif(file);
         if (exif?.GPSLatitude && exif?.GPSLongitude) {
           photo.lat = this.dmsToDecimal(exif.GPSLatitude, exif.GPSLatitudeRef);
           photo.lng = this.dmsToDecimal(exif.GPSLongitude, exif.GPSLongitudeRef);
-          photo.takenAt = exif.DateTimeOriginal ? this.parseExifDate(exif.DateTimeOriginal) : null;
+          if (exif.DateTimeOriginal) {
+            photo.takenAt = this.parseExifDate(exif.DateTimeOriginal);
+            photo.takenYearMonth = this.formatYearMonth(photo.takenAt);
+          }
         }
       } catch (e) { console.log('No EXIF for', file.name); }
 
@@ -97,6 +100,10 @@ class UploadPage {
   parseExifDate(str) {
     const [d, t] = str.split(' ');
     return new Date(d.replace(/:/g, '-') + 'T' + t);
+  }
+
+  formatYearMonth(date) {
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
   }
 
   renderProvinceOptions(selectedProvince) {
@@ -130,8 +137,9 @@ class UploadPage {
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-sm text-charcoal truncate">${p.file.name}</p>
-          <div class="flex items-center gap-2 mt-1">
+          <div class="flex items-center gap-2 mt-1 flex-wrap">
             ${p.lat ? `<span class="text-xs text-moss bg-moss/10 px-1.5 py-0.5 rounded">已定位</span>` : `<span class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">无GPS</span>`}
+            ${p.takenYearMonth ? `<span class="text-xs text-mid-gray bg-sand/20 px-1.5 py-0.5 rounded">${p.takenYearMonth}</span>` : `<span class="text-xs text-mid-gray/50 bg-sand/10 px-1.5 py-0.5 rounded">未设日期</span>`}
             ${p.city ? `
               <span id="city-badge-${idx}" class="text-xs text-mid-gray">${p.province || ''} ${p.city}</span>
               <button onclick="uploadPage.startEdit(${idx})" class="text-xs text-mid-gray hover:text-moss hover:underline flex-shrink-0">修改</button>
@@ -141,7 +149,7 @@ class UploadPage {
             `}
           </div>
           ${this.editingIdx.has(idx) ? `
-          <div class="flex items-center gap-2 mt-2" id="edit-panel-${idx}">
+          <div class="flex items-center gap-2 mt-2 flex-wrap" id="edit-panel-${idx}">
             <select id="prov-select-${idx}" onchange="uploadPage.onProvinceChange(${idx}, this.value)" class="text-xs px-2 py-1 border border-sand/50 rounded bg-white">
               <option value="">选择省份</option>
               ${this.renderProvinceOptions(p.province || '')}
@@ -150,6 +158,7 @@ class UploadPage {
               <option value="">选择城市</option>
               ${p.province ? this.renderCityOptions(p.province, p.city || '') : '<option value="">请先选省份</option>'}
             </select>
+            <input type="month" id="date-${idx}" value="${p.takenYearMonth || ''}" onchange="uploadPage.onYearMonthChange(${idx}, this.value)" class="text-xs px-2 py-1 border border-sand/50 rounded bg-white" style="width:130px;">
           </div>
           ` : ''}
         </div>
@@ -178,6 +187,14 @@ class UploadPage {
     if (!cityName) return;
     this.files[idx].city = cityName;
     this.editingIdx.delete(idx);
+    this.renderPreview();
+  }
+
+  onYearMonthChange(idx, value) {
+    this.files[idx].takenYearMonth = value;
+    if (value) {
+      this.files[idx].takenAt = new Date(value + '-01');
+    }
     this.renderPreview();
   }
 
@@ -215,6 +232,7 @@ class UploadPage {
           lat: photo.lat,
           lng: photo.lng,
           takenAt: photo.takenAt,
+          takenYearMonth: photo.takenYearMonth,
           description: photo.description,
         });
       }
