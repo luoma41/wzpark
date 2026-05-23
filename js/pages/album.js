@@ -99,7 +99,6 @@ class AlbumPage {
       const items = [
         `<span class="tracking-wide">${this.photos.length} 张照片</span>`,
         dateRange ? `<span class="text-sand">·</span><span class="tracking-wide">${dateRange}</span>` : '',
-        this.album.province ? `<span class="text-sand">·</span><span class="tracking-wide">${this.album.province}</span>` : '',
       ];
       infobar.innerHTML = items.join('');
       infobar.classList.remove('hidden');
@@ -193,7 +192,6 @@ class AlbumPage {
       const items = [
         `<span class="tracking-wide">${this.photos.length} 张照片</span>`,
         dateRange ? `<span class="text-sand">·</span><span class="tracking-wide">${dateRange}</span>` : '',
-        this.album.province ? `<span class="text-sand">·</span><span class="tracking-wide">${this.album.province}</span>` : '',
       ];
       infobar.innerHTML = items.join('');
 
