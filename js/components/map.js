@@ -4,12 +4,13 @@ class MapComponent {
     this.map = null;
     this.markerCluster = null;
     this.geoJsonLayer = null;
+    this.cityCircles = null;
+    this.cityData = {};
   }
 
   async init() {
     if (!this.container) return;
 
-    // China bounding box
     const chinaBounds = L.latLngBounds([[18, 73], [54, 135]]);
 
     this.map = L.map(this.container, {
@@ -22,7 +23,8 @@ class MapComponent {
       zoomControl: false,
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    // No-label tile layer for clean appearance
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       subdomains: 'abcd',
     }).addTo(this.map);
@@ -42,14 +44,57 @@ class MapComponent {
         fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(r => r.json()),
       ]);
 
-      this.cityData = {};
       mapData.forEach(d => { this.cityData[d.city] = d; });
 
+      // GeoJSON layer — subtle China outline for context
       this.geoJsonLayer = L.geoJSON(geoJson, {
-        style: (feature) => this.geoJsonStyle(feature),
-        onEachFeature: (feature, layer) => this.onGeoJsonFeature(feature, layer),
+        style: () => ({
+          fillColor: '#F0F0F0',
+          weight: 0.5,
+          opacity: 0.3,
+          color: '#CCC',
+          fillOpacity: 0.3,
+        }),
       });
 
+      // City highlight circles — prominent colored dots at city positions
+      this.cityCircles = L.layerGroup();
+      mapData.forEach(d => {
+        const radius = Math.min(12 + d.count * 4, 30);
+        const circle = L.circleMarker([d.lat, d.lng], {
+          radius: radius,
+          fillColor: '#3A6B3A',
+          fillOpacity: 0.55,
+          color: '#2D5A2D',
+          weight: 1.5,
+          opacity: 0.8,
+        });
+        circle.bindTooltip(`<b>${d.city}</b><br>${d.count}张照片`, {
+          permanent: false,
+          direction: 'top',
+        });
+        circle.bindPopup(`<b>${d.city}</b><br>${d.count} 照片<br><a href="#/album/${encodeURIComponent(d.city)}">查看相册 &rarr;</a>`);
+        circle.on('click', () => {
+          window.router.navigate(`/album/${encodeURIComponent(d.city)}`);
+        });
+        circle.on('mouseover', function() {
+          this.setStyle({
+            fillColor: '#2D5A2D',
+            fillOpacity: 0.75,
+            weight: 3,
+          });
+        });
+        circle.on('mouseout', function() {
+          this.setStyle({
+            fillColor: '#3A6B3A',
+            fillOpacity: 0.55,
+            weight: 1.5,
+          });
+        });
+        this.cityCircles.addLayer(circle);
+      });
+
+      // Marker cluster for high zoom
       this.markerCluster = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
@@ -70,52 +115,15 @@ class MapComponent {
     }
   }
 
-  geoJsonStyle(feature) {
-    const cityName = feature.properties.name;
-    const hasData = this.cityData[cityName];
-    return {
-      fillColor: hasData ? '#3A6B3A' : '#E8E8E8',
-      weight: hasData ? 1.5 : 0.5,
-      opacity: 0.5,
-      color: hasData ? '#2D5A2D' : '#BBB',
-      fillOpacity: hasData ? 0.5 : 0.08,
-    };
-  }
-
-  onGeoJsonFeature(feature, layer) {
-    const cityName = feature.properties.name;
-    const hasData = this.cityData[cityName];
-
-    if (hasData) {
-      layer.on('click', () => {
-        window.router.navigate(`/album/${encodeURIComponent(cityName)}`);
-      });
-      layer.bindTooltip(`<b>${cityName}</b><br>${this.cityData[cityName].count}张照片`, {
-        permanent: false,
-        direction: 'top',
-        className: 'custom-map-tooltip',
-      });
-      // Hover effect
-      layer.on('mouseover', () => {
-        layer.setStyle({
-          fillColor: '#2D5A2D',
-          fillOpacity: 0.7,
-          weight: 2,
-        });
-      });
-      layer.on('mouseout', () => {
-        layer.setStyle(this.geoJsonStyle(feature));
-      });
-    }
-  }
-
   toggleLayerByZoom() {
     const zoom = this.map.getZoom();
     if (zoom <= 6) {
       if (this.markerCluster) this.map.removeLayer(this.markerCluster);
       if (this.geoJsonLayer) this.geoJsonLayer.addTo(this.map);
+      if (this.cityCircles) this.cityCircles.addTo(this.map);
     } else {
       if (this.geoJsonLayer) this.map.removeLayer(this.geoJsonLayer);
+      if (this.cityCircles) this.map.removeLayer(this.cityCircles);
       if (this.markerCluster) this.markerCluster.addTo(this.map);
     }
   }
