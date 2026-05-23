@@ -15,15 +15,15 @@ app.use((req, res, next) => {
 });
 
 // Import existing Vercel API handlers (CommonJS, compatible with Express req/res)
-import photosIndex from '../../server/photos/index.js';
-import photosById from '../../server/photos/[id].js';
-import albumsIndex from '../../server/albums/index.js';
-import albumsById from '../../server/albums/[id].js';
-import sharesIndex from '../../server/shares/index.js';
-import sharesVerify from '../../server/shares/verify.js';
-import authLogin from '../../server/auth/login.js';
-import uploadSts from '../../server/upload-sts.js';
-import mapData from '../../server/map-data.js';
+import photosIndex from '../server/photos/index.js';
+import photosById from '../server/photos/[id].js';
+import albumsIndex from '../server/albums/index.js';
+import albumsById from '../server/albums/[id].js';
+import sharesIndex from '../server/shares/index.js';
+import sharesVerify from '../server/shares/verify.js';
+import authLogin from '../server/auth/login.js';
+import uploadSts from '../server/upload-sts.js';
+import mapData from '../server/map-data.js';
 
 // Mount routes
 app.all('/api/photos', photosIndex);
