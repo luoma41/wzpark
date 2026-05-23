@@ -48,6 +48,47 @@ class PhotoGrid {
     this.container.querySelectorAll('img[data-src]').forEach(img => this.observer.observe(img));
   }
 
+  renderGrouped(groups, options = {}) {
+    if (!this.container) return;
+    const { editable = false, onDelete } = options;
+    this.onDeleteCallback = onDelete;
+
+    if (!groups || groups.length === 0) {
+      this.container.innerHTML = '<p class="text-mid-gray/50 text-sm italic py-16 text-center">暂无照片</p>';
+      return;
+    }
+
+    let html = '';
+    groups.forEach((group, gi) => {
+      const photos = group.photos || [];
+      if (photos.length === 0) return;
+
+      const hasHero = photos.length >= 3;
+      const heroPhoto = hasHero ? photos[0] : null;
+      const gridPhotos = hasHero ? photos.slice(1) : photos;
+
+      html += `
+        <div class="mb-12">
+          <div class="mb-5">
+            <p class="text-sm font-medium text-charcoal tracking-wide">${group.label}</p>
+            <div class="editorial-rule" style="margin-bottom:0;"></div>
+          </div>
+          ${heroPhoto ? `
+            <div class="mb-2">
+              ${this.photoCard(heroPhoto, editable, gi * 1000, true)}
+            </div>
+          ` : ''}
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            ${gridPhotos.map((p, idx) => this.photoCard(p, editable, gi * 1000 + idx + 1)).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    this.container.innerHTML = html;
+    this.container.querySelectorAll('img[data-src]').forEach(img => this.observer.observe(img));
+  }
+
   photoCard(photo, editable, idx, isHero = false) {
     const aspectClass = isHero ? 'aspect-[16/9] md:aspect-[21/9]' : 'aspect-square';
     return `

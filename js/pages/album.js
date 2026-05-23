@@ -65,11 +65,39 @@ class AlbumPage {
       this.photos = data.photos;
 
       document.getElementById('album-description').textContent = this.album.description || '暂无描述';
-      this.photoGrid.render(this.photos, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
+      const groups = this.groupPhotosByDate(this.photos);
+      this.photoGrid.renderGrouped(groups, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
 
     } catch (err) {
       console.error('Failed to load album:', err);
     }
+  }
+
+  groupPhotosByDate(photos) {
+    const grouped = {};
+    const undated = [];
+
+    photos.forEach(p => {
+      if (p.takenYearMonth) {
+        if (!grouped[p.takenYearMonth]) grouped[p.takenYearMonth] = [];
+        grouped[p.takenYearMonth].push(p);
+      } else {
+        undated.push(p);
+      }
+    });
+
+    const groups = Object.entries(grouped)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([ym, pics]) => {
+        const [y, m] = ym.split('-');
+        return { label: `${y}年${parseInt(m)}月`, photos: pics };
+      });
+
+    if (undated.length > 0) {
+      groups.push({ label: '未分类', photos: undated });
+    }
+
+    return groups;
   }
 
   editDescription() {
@@ -108,7 +136,8 @@ class AlbumPage {
     try {
       await apiClient.deletePhoto(id);
       this.photos = this.photos.filter(p => p._id !== id);
-      this.photoGrid.render(this.photos, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
+      const groups = this.groupPhotosByDate(this.photos);
+      this.photoGrid.renderGrouped(groups, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
     } catch (err) {
       alert('删除失败: ' + err.message);
     }
