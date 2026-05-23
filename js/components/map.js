@@ -5,7 +5,6 @@ class MapComponent {
     this.markerCluster = null;
     this.geoJsonLayer = null;
     this.cityCircles = null;
-    this.cityData = {};
   }
 
   async init() {
@@ -23,7 +22,6 @@ class MapComponent {
       zoomControl: false,
     });
 
-    // No-label tile layer for clean appearance
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       subdomains: 'abcd',
@@ -39,14 +37,36 @@ class MapComponent {
 
   async loadMapData() {
     try {
-      const [mapData, geoJson] = await Promise.all([
+      const [albums, mapData, geoJson, cityCoords] = await Promise.all([
+        apiClient.getAlbums(),
         apiClient.getMapData(),
         fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(r => r.json()),
+        fetch('/js/data/cityCoords.json').then(r => r.json()),
       ]);
 
-      mapData.forEach(d => { this.cityData[d.city] = d; });
+      // Build GPS lookup from map data (only valid coordinates)
+      const gpsByCity = {};
+      mapData.forEach(d => {
+        if (d.lat != null && d.lng != null) {
+          gpsByCity[d.city] = { lat: d.lat, lng: d.lng };
+        }
+      });
 
-      // GeoJSON layer — subtle China outline for context
+      // Merge: albums provide city + count, coords come from GPS or fallback
+      const cityPoints = [];
+      albums.forEach(album => {
+        const gps = gpsByCity[album.city];
+        const fallback = cityCoords[album.city];
+        if (gps) {
+          cityPoints.push({ city: album.city, lat: gps.lat, lng: gps.lng, count: album.photoCount, source: 'gps' });
+        } else if (fallback) {
+          cityPoints.push({ city: album.city, lat: fallback[0], lng: fallback[1], count: album.photoCount, source: 'default' });
+        } else {
+          console.warn('No coordinates for:', album.city);
+        }
+      });
+
+      // GeoJSON layer for China boundary context
       this.geoJsonLayer = L.geoJSON(geoJson, {
         style: () => ({
           fillColor: '#F0F0F0',
@@ -57,9 +77,9 @@ class MapComponent {
         }),
       });
 
-      // City highlight circles — prominent colored dots at city positions
+      // City highlight circles
       this.cityCircles = L.layerGroup();
-      mapData.forEach(d => {
+      cityPoints.forEach(d => {
         const radius = Math.min(12 + d.count * 4, 30);
         const circle = L.circleMarker([d.lat, d.lng], {
           radius: radius,
@@ -73,23 +93,15 @@ class MapComponent {
           permanent: false,
           direction: 'top',
         });
-        circle.bindPopup(`<b>${d.city}</b><br>${d.count} 照片<br><a href="#/album/${encodeURIComponent(d.city)}">查看相册 &rarr;</a>`);
+        circle.bindPopup(`<b>${d.city}</b><br>${d.count} 张照片<br><a href="#/album/${encodeURIComponent(d.city)}">查看相册 &rarr;</a>`);
         circle.on('click', () => {
           window.router.navigate(`/album/${encodeURIComponent(d.city)}`);
         });
         circle.on('mouseover', function() {
-          this.setStyle({
-            fillColor: '#2D5A2D',
-            fillOpacity: 0.75,
-            weight: 3,
-          });
+          this.setStyle({ fillColor: '#2D5A2D', fillOpacity: 0.75, weight: 3 });
         });
         circle.on('mouseout', function() {
-          this.setStyle({
-            fillColor: '#3A6B3A',
-            fillOpacity: 0.55,
-            weight: 1.5,
-          });
+          this.setStyle({ fillColor: '#3A6B3A', fillOpacity: 0.55, weight: 1.5 });
         });
         this.cityCircles.addLayer(circle);
       });
@@ -101,7 +113,7 @@ class MapComponent {
         zoomToBoundsOnClick: true,
       });
 
-      mapData.forEach(d => {
+      cityPoints.forEach(d => {
         const marker = L.marker([d.lat, d.lng]);
         marker.bindPopup(`<b>${d.city}</b><br>${d.count} 照片`);
         marker.on('click', () => {

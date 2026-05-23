@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   const photos = db.collection('photos');
 
   const pipeline = [
-    { $match: { lat: { $exists: true }, lng: { $exists: true } } },
+    { $match: { lat: { $ne: null, $exists: true }, lng: { $ne: null, $exists: true } } },
     {
       $group: {
         _id: { city: '$city', province: '$province' },
