@@ -84,15 +84,15 @@ class HomePage {
     }
 
     listEl.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="columns-1 md:columns-2 lg:columns-3 gap-8">
         ${this.albums.map(album => `
-          <a href="#/album/${encodeURIComponent(album.city)}" class="block group">
-            <div class="aspect-[4/3] rounded-lg overflow-hidden bg-sand/20 mb-4">
+          <a href="#/album/${encodeURIComponent(album.city)}" class="block group break-inside-avoid mb-8">
+            <div class="rounded-lg overflow-hidden bg-sand/20 mb-4">
               ${album.coverPhotoId ? `
                 <img src="${album.coverUrl || ''}" alt="${album.city}"
-                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]">
+                     class="w-full transition-transform duration-700 group-hover:scale-[1.02]">
               ` : `
-                <div class="w-full h-full flex items-center justify-center text-mid-gray text-sm">暂无封面</div>
+                <div class="w-full aspect-[4/3] flex items-center justify-center text-mid-gray text-sm">暂无封面</div>
               `}
             </div>
             <h3 class="text-xl font-light text-charcoal leading-tight group-hover:text-moss transition-colors">
