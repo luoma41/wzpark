@@ -69,44 +69,32 @@ const handler = async (req, res) => {
         continue;
       }
       try {
-        await albums.updateOne(
-          { city: safeCity },
-          {
-            $inc: { photoCount: count },
-            $set: { updatedAt: now },
-            $setOnInsert: {
-              province: items.find(i => i.city === city)?.province || '',
-              coverPhotoId: null,
-              description: '',
-              createdAt: now,
-            },
-          },
-          { upsert: true }
-        );
-      } catch (err) {
-        if (err.code === 11000) {
-          console.warn('Duplicate key on upsert for city:', safeCity, '- retrying update only');
-          const updateResult = await albums.updateOne(
+        let album = await albums.findOne({ city: safeCity });
+        if (album) {
+          await albums.updateOne(
             { city: safeCity },
             { $inc: { photoCount: count }, $set: { updatedAt: now } }
           );
-          if (updateResult.matchedCount === 0) {
-            console.warn('Album not found after duplicate key, attempting insertOne for:', safeCity);
-            try {
-              await albums.insertOne({
-                city: safeCity,
-                province: items.find(i => i.city === city)?.province || '',
-                coverPhotoId: null,
-                description: '',
-                photoCount: count,
-                createdAt: now,
-                updatedAt: now,
-              });
-            } catch (insertErr) {
-              if (insertErr.code !== 11000) throw insertErr;
-              console.warn('InsertOne also failed with duplicate key, ignoring:', safeCity);
-            }
-          }
+          console.log('Updated existing album:', safeCity);
+        } else {
+          await albums.insertOne({
+            city: safeCity,
+            province: items.find(i => i.city === city)?.province || '',
+            coverPhotoId: null,
+            description: '',
+            photoCount: count,
+            createdAt: now,
+            updatedAt: now,
+          });
+          console.log('Created new album:', safeCity);
+        }
+      } catch (err) {
+        if (err.code === 11000) {
+          console.warn('Duplicate key for city:', safeCity, '- trying update instead');
+          await albums.updateOne(
+            { city: safeCity },
+            { $inc: { photoCount: count }, $set: { updatedAt: now } }
+          );
         } else {
           throw err;
         }
