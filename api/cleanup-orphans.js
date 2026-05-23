@@ -26,6 +26,6 @@ module.exports = async (req, res) => {
     });
   } catch (err) {
     console.error('Cleanup error:', err);
-    return sendError(res, 500, err.message);
+    return sendError(res, 500, err.message + ' | STACK: ' + (err.stack || 'none'));
   }
 };

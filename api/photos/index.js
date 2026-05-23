@@ -35,6 +35,9 @@ const handler = async (req, res) => {
       item.albumId = item.albumId || null;
     }
 
+    const insertedItemsCities = items.map(i => ({ city: i.city, province: i.province }));
+    const operationLog = [];
+
     const result = await photos.insertMany(items);
 
     // Clean up dirty data
@@ -65,19 +68,19 @@ const handler = async (req, res) => {
     for (const [city, count] of Object.entries(cityGroups)) {
       const safeCity = city || '未知城市';
       if (!safeCity || safeCity === '未知城市') {
-        console.warn('Skipping album creation for invalid city:', city);
+        operationLog.push({ step: 'skip', city, safeCity, reason: 'invalid' });
         continue;
       }
       try {
         let album = await albums.findOne({ city: safeCity });
         if (album) {
-          await albums.updateOne(
+          const updateRes = await albums.updateOne(
             { city: safeCity },
             { $inc: { photoCount: count }, $set: { updatedAt: now } }
           );
-          console.log('Updated existing album:', safeCity);
+          operationLog.push({ step: 'update', city, safeCity, matched: updateRes.matchedCount, modified: updateRes.modifiedCount });
         } else {
-          await albums.insertOne({
+          const insertRes = await albums.insertOne({
             city: safeCity,
             province: items.find(i => i.city === city)?.province || '',
             coverPhotoId: null,
@@ -86,24 +89,25 @@ const handler = async (req, res) => {
             createdAt: now,
             updatedAt: now,
           });
-          console.log('Created new album:', safeCity);
+          operationLog.push({ step: 'insert', city, safeCity, insertedId: insertRes.insertedId });
         }
       } catch (err) {
         if (err.code === 11000) {
-          console.warn('Duplicate key for city:', safeCity, '- trying update instead');
-          await albums.updateOne(
+          const updateRes = await albums.updateOne(
             { city: safeCity },
             { $inc: { photoCount: count }, $set: { updatedAt: now } }
           );
+          operationLog.push({ step: 'update_after_duplicate', city, safeCity, matched: updateRes.matchedCount });
         } else {
+          operationLog.push({ step: 'error', city, safeCity, error: err.message, code: err.code });
           throw err;
         }
       }
     }
 
     // Recalculate photoCount for all albums to ensure consistency
-    const allAlbums = await albums.find({}, { projection: { city: 1 } }).toArray();
-    for (const album of allAlbums) {
+    const allAlbumsBeforeRecalc = await albums.find({}, { projection: { city: 1, photoCount: 1 } }).toArray();
+    for (const album of allAlbumsBeforeRecalc) {
       const safeCity = album.city;
       if (!safeCity) continue;
       const actualCount = await photos.countDocuments({ city: safeCity });
@@ -117,9 +121,14 @@ const handler = async (req, res) => {
     const finalAlbums = await albums.find({}, { projection: { city: 1, photoCount: 1 } }).toArray();
     return sendSuccess(res, {
       insertedIds: result.insertedIds,
-      version: '2.2',
+      version: '2.3',
       albumsUpdated: Object.keys(cityGroups),
-      diagnostics: { finalAlbums }
+      diagnostics: {
+        insertedItemsCities,
+        operationLog,
+        allAlbumsBeforeRecalc,
+        finalAlbums
+      }
     });
   }
 
