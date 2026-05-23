@@ -37,9 +37,15 @@ const handler = async (req, res) => {
 
     const result = await photos.insertMany(items);
 
-    // Clean up dirty data and problematic index
+    // Clean up dirty data
     try {
       await albums.deleteMany({ $or: [{ city: null }, { city: '' }, { city: { $exists: false } }] });
+    } catch (e) {
+      console.log('DeleteMany error:', e.message);
+    }
+
+    // Drop problematic unique index on city
+    try {
       const indexes = await albums.indexes();
       for (const idx of indexes) {
         if (idx.unique && idx.key && idx.key.city !== undefined) {
@@ -48,7 +54,7 @@ const handler = async (req, res) => {
         }
       }
     } catch (e) {
-      console.log('Cleanup error:', e.message);
+      console.log('Index drop error:', e.message);
     }
 
     // Update album photoCount
@@ -80,10 +86,27 @@ const handler = async (req, res) => {
       } catch (err) {
         if (err.code === 11000) {
           console.warn('Duplicate key on upsert for city:', safeCity, '- retrying update only');
-          await albums.updateOne(
+          const updateResult = await albums.updateOne(
             { city: safeCity },
             { $inc: { photoCount: count }, $set: { updatedAt: now } }
           );
+          if (updateResult.matchedCount === 0) {
+            console.warn('Album not found after duplicate key, attempting insertOne for:', safeCity);
+            try {
+              await albums.insertOne({
+                city: safeCity,
+                province: items.find(i => i.city === city)?.province || '',
+                coverPhotoId: null,
+                description: '',
+                photoCount: count,
+                createdAt: now,
+                updatedAt: now,
+              });
+            } catch (insertErr) {
+              if (insertErr.code !== 11000) throw insertErr;
+              console.warn('InsertOne also failed with duplicate key, ignoring:', safeCity);
+            }
+          }
         } else {
           throw err;
         }

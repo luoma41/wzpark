@@ -26,39 +26,44 @@ async function handler(req, res) {
     return sendError(res, 400, 'No photos found in database. Cleanup aborted to prevent accidental deletion.');
   }
 
-  const allCosKeys = [];
-  let marker;
-  do {
-    const data = await cos.getBucket({
-      Bucket: bucket,
-      Region: region,
-      Prefix: 'photos/',
-      Marker: marker,
-      MaxKeys: 1000,
+  let allCosKeys = [];
+  try {
+    const data = await new Promise((resolve, reject) => {
+      cos.getBucket({
+        Bucket: bucket,
+        Region: region,
+        Prefix: 'photos/',
+        MaxKeys: 1000,
+      }, (err, data) => {
+        if (err) reject(err);
+        else resolve(data);
+      });
     });
-    if (data.Contents) {
-      allCosKeys.push(...data.Contents.map(item => item.Key));
-    }
-    marker = data.NextMarker;
-  } while (marker);
+    allCosKeys = (data.Contents || []).map(item => item.Key);
+  } catch (err) {
+    console.error('COS getBucket error:', err);
+    return sendError(res, 500, `Failed to list COS objects: ${err.message}`);
+  }
 
   const orphans = allCosKeys.filter(key => !usedKeys.has(key));
 
   let deleted = [];
   if (!dryRun && orphans.length > 0) {
-    const batchSize = 1000;
-    for (let i = 0; i < orphans.length; i += batchSize) {
-      const batch = orphans.slice(i, i + batchSize);
-      try {
-        await cos.deleteMultipleObject({
+    try {
+      const deleteResult = await new Promise((resolve, reject) => {
+        cos.deleteMultipleObject({
           Bucket: bucket,
           Region: region,
-          Objects: batch.map(key => ({ Key: key })),
+          Objects: orphans.map(key => ({ Key: key })),
+        }, (err, data) => {
+          if (err) reject(err);
+          else resolve(data);
         });
-        deleted.push(...batch);
-      } catch (err) {
-        console.error('Batch delete error:', err);
-      }
+      });
+      deleted = orphans;
+      console.log('COS delete result:', deleteResult);
+    } catch (err) {
+      console.error('Batch delete error:', err);
     }
   }
 
