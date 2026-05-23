@@ -28,6 +28,41 @@
     .page { display: none; animation: fadeIn 0.2s ease; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* Map artistic markers */
+    .travel-marker-wrapper { background: transparent; border: none; }
+    .travel-marker {
+      background: #5A7D5A;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #FAF9F7;
+      box-shadow: 0 2px 8px rgba(45,45,45,0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .travel-marker:hover { transform: scale(1.15); box-shadow: 0 4px 14px rgba(45,45,45,0.35); }
+    .travel-pin-wrapper { background: transparent; border: none; }
+    .travel-pin {
+      background: #5A7D5A;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 5px rgba(45,45,45,0.3);
+      transition: transform 0.2s ease;
+      cursor: pointer;
+    }
+    .travel-pin:hover { transform: scale(1.2); }
+    .travel-pin-count { color: #FAF9F7; font-size: 11px; font-weight: 600; line-height: 1; }
+    .travel-cluster-wrapper { background: transparent; border: none; }
+    .travel-cluster {
+      background: rgba(90,125,90,0.85);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(45,45,45,0.3);
+      color: #FAF9F7; font-size: 13px; font-weight: 600;
+      border: 2px solid #FAF9F7;
+      transition: transform 0.2s ease;
+      cursor: pointer;
+    }
+    .travel-cluster:hover { transform: scale(1.1); }
   </style>
 </head>
 <body>
@@ -57,17 +92,17 @@
   <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
 
   <!-- App Modules -->
-  <script src="/js/utils.js?v=7"></script>
-  <script src="/js/api.js?v=7"></script>
-  <script src="/js/router.js?v=7"></script>
-  <script src="/js/components/navbar.js?v=7"></script>
-  <script src="/js/components/map.js?v=7"></script>
-  <script src="/js/components/photoGrid.js?v=7"></script>
-  <script src="/js/pages/home.js?v=7"></script>
-  <script src="/js/pages/album.js?v=7"></script>
-  <script src="/js/pages/share.js?v=7"></script>
-  <script src="/js/pages/admin.js?v=7"></script>
-  <script src="/js/pages/upload.js?v=7"></script>
+  <script src="/js/utils.js?v=8"></script>
+  <script src="/js/api.js?v=8"></script>
+  <script src="/js/router.js?v=8"></script>
+  <script src="/js/components/navbar.js?v=8"></script>
+  <script src="/js/components/map.js?v=8"></script>
+  <script src="/js/components/photoGrid.js?v=8"></script>
+  <script src="/js/pages/home.js?v=8"></script>
+  <script src="/js/pages/album.js?v=8"></script>
+  <script src="/js/pages/share.js?v=8"></script>
+  <script src="/js/pages/admin.js?v=8"></script>
+  <script src="/js/pages/upload.js?v=8"></script>
   <script>
     // Initialize app
     document.addEventListener('DOMContentLoaded', () => {

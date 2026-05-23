@@ -4,7 +4,7 @@ class MapComponent {
     this.map = null;
     this.markerCluster = null;
     this.geoJsonLayer = null;
-    this.cityCircles = null;
+    this.cityMarkers = null;
   }
 
   async init() {
@@ -44,7 +44,6 @@ class MapComponent {
         fetch('/js/data/cityCoords.json').then(r => r.json()),
       ]);
 
-      // Build GPS lookup from map data (only valid coordinates)
       const gpsByCity = {};
       mapData.forEach(d => {
         if (d.lat != null && d.lng != null) {
@@ -52,21 +51,18 @@ class MapComponent {
         }
       });
 
-      // Merge: albums provide city + count, coords come from GPS or fallback
       const cityPoints = [];
       albums.forEach(album => {
         const gps = gpsByCity[album.city];
         const fallback = cityCoords[album.city];
         if (gps) {
-          cityPoints.push({ city: album.city, lat: gps.lat, lng: gps.lng, count: album.photoCount, source: 'gps' });
+          cityPoints.push({ city: album.city, lat: gps.lat, lng: gps.lng, count: album.photoCount });
         } else if (fallback) {
-          cityPoints.push({ city: album.city, lat: fallback[0], lng: fallback[1], count: album.photoCount, source: 'default' });
-        } else {
-          console.warn('No coordinates for:', album.city);
+          cityPoints.push({ city: album.city, lat: fallback[0], lng: fallback[1], count: album.photoCount });
         }
       });
 
-      // GeoJSON layer for China boundary context
+      // China boundary outline
       this.geoJsonLayer = L.geoJSON(geoJson, {
         style: () => ({
           fillColor: '#F0F0F0',
@@ -77,45 +73,25 @@ class MapComponent {
         }),
       });
 
-      // City highlight circles
-      this.cityCircles = L.layerGroup();
+      // Artistic city markers (low zoom)
+      this.cityMarkers = L.layerGroup();
       cityPoints.forEach(d => {
-        const radius = Math.min(12 + d.count * 4, 30);
-        const circle = L.circleMarker([d.lat, d.lng], {
-          radius: radius,
-          fillColor: '#3A6B3A',
-          fillOpacity: 0.55,
-          color: '#2D5A2D',
-          weight: 1.5,
-          opacity: 0.8,
-        });
-        circle.bindTooltip(`<b>${d.city}</b><br>${d.count}张照片`, {
-          permanent: false,
-          direction: 'top',
-        });
-        circle.bindPopup(`<b>${d.city}</b><br>${d.count} 张照片<br><a href="#/album/${encodeURIComponent(d.city)}">查看相册 &rarr;</a>`);
-        circle.on('click', () => {
-          window.router.navigate(`/album/${encodeURIComponent(d.city)}`);
-        });
-        circle.on('mouseover', function() {
-          this.setStyle({ fillColor: '#2D5A2D', fillOpacity: 0.75, weight: 3 });
-        });
-        circle.on('mouseout', function() {
-          this.setStyle({ fillColor: '#3A6B3A', fillOpacity: 0.55, weight: 1.5 });
-        });
-        this.cityCircles.addLayer(circle);
+        const marker = this.createCityMarker(d);
+        this.cityMarkers.addLayer(marker);
       });
 
-      // Marker cluster for high zoom
+      // Cluster markers (high zoom) — custom styled
       this.markerCluster = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
         zoomToBoundsOnClick: true,
+        iconCreateFunction: (cluster) => this.createClusterIcon(cluster),
       });
 
       cityPoints.forEach(d => {
-        const marker = L.marker([d.lat, d.lng]);
-        marker.bindPopup(`<b>${d.city}</b><br>${d.count} 照片`);
+        const icon = this.createPinIcon(d.count);
+        const marker = L.marker([d.lat, d.lng], { icon });
+        marker.bindPopup(`<b>${d.city}</b><br>${d.count} 张照片`);
         marker.on('click', () => {
           window.router.navigate(`/album/${encodeURIComponent(d.city)}`);
         });
@@ -127,15 +103,73 @@ class MapComponent {
     }
   }
 
+  createCityMarker(d) {
+    const size = Math.min(28 + d.count * 4, 44);
+    const iconSize = size + 12; // extra space for shadow/scale
+
+    const html = `
+      <div class="travel-marker" style="width:${size}px;height:${size}px;">
+        <svg viewBox="0 0 24 24" width="${size * 0.52}" height="${size * 0.52}">
+          <rect x="2" y="4" width="20" height="15" rx="3" stroke-width="1.4" fill="none"/>
+          <circle cx="12" cy="11.5" r="4" stroke-width="1.4" fill="none"/>
+          <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>
+        </svg>
+      </div>`;
+
+    const icon = L.divIcon({
+      className: 'travel-marker-wrapper',
+      html,
+      iconSize: [iconSize, iconSize],
+      iconAnchor: [iconSize / 2, iconSize / 2],
+      popupAnchor: [0, -iconSize / 2],
+      tooltipAnchor: [0, -iconSize / 2],
+    });
+
+    const marker = L.marker([d.lat, d.lng], { icon });
+    marker.bindTooltip(`<b>${d.city}</b><br>${d.count}张照片`, { direction: 'top' });
+    marker.bindPopup(`<b>${d.city}</b><br>${d.count} 张照片<br><a href="#/album/${encodeURIComponent(d.city)}">查看相册 &rarr;</a>`);
+    marker.on('click', () => {
+      window.router.navigate(`/album/${encodeURIComponent(d.city)}`);
+    });
+    return marker;
+  }
+
+  createPinIcon(count) {
+    const size = Math.min(24 + count * 2, 34);
+    const html = `
+      <div class="travel-pin" style="width:${size}px;height:${size}px;">
+        <span class="travel-pin-count">${count}</span>
+      </div>`;
+    return L.divIcon({
+      className: 'travel-pin-wrapper',
+      html,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
+    });
+  }
+
+  createClusterIcon(cluster) {
+    const count = cluster.getChildCount();
+    const size = count < 10 ? 36 : count < 30 ? 42 : 48;
+    const html = `<div class="travel-cluster" style="width:${size}px;height:${size}px;"><span>${count}</span></div>`;
+    return L.divIcon({
+      className: 'travel-cluster-wrapper',
+      html,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  }
+
   toggleLayerByZoom() {
     const zoom = this.map.getZoom();
     if (zoom <= 6) {
       if (this.markerCluster) this.map.removeLayer(this.markerCluster);
       if (this.geoJsonLayer) this.geoJsonLayer.addTo(this.map);
-      if (this.cityCircles) this.cityCircles.addTo(this.map);
+      if (this.cityMarkers) this.cityMarkers.addTo(this.map);
     } else {
       if (this.geoJsonLayer) this.map.removeLayer(this.geoJsonLayer);
-      if (this.cityCircles) this.map.removeLayer(this.cityCircles);
+      if (this.cityMarkers) this.map.removeLayer(this.cityMarkers);
       if (this.markerCluster) this.markerCluster.addTo(this.map);
     }
   }
