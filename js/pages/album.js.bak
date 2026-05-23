@@ -24,30 +24,18 @@ class AlbumPage {
           返回首页
         </a>
 
-        <!-- Hero Cover -->
-        <div id="album-hero" class="w-full aspect-[21/9] rounded-lg overflow-hidden bg-sand/20 mb-8 relative hidden">
-          <img id="album-hero-img" class="w-full h-full object-cover" alt="">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
-          <div class="absolute bottom-0 left-0 right-0 p-8 md:p-12">
-            <p class="editorial-overline text-white/80 mb-3">相册</p>
-            <h1 id="album-hero-title" class="text-4xl md:text-6xl font-light text-white leading-tight tracking-tight"></h1>
-          </div>
-        </div>
-
-        <!-- Info Bar -->
-        <div id="album-infobar" class="flex flex-wrap items-center gap-4 text-sm text-mid-gray mb-6 hidden">
-          <div class="editorial-rule" style="margin-bottom:0;"></div>
-        </div>
-
-        <!-- Description -->
-        <div id="album-description" class="text-base md:text-lg text-mid-gray leading-relaxed max-w-2xl mb-8"></div>
-
-        ${isAdmin ? `
-        <div class="flex gap-4 mb-14">
-          <button onclick="albumPage.editDescription()" class="text-xs tracking-widest text-mid-gray hover:text-charcoal border-b border-transparent hover:border-mid-gray pb-0.5 transition-all">编辑说明</button>
-          <button onclick="albumPage.createShare()" class="text-xs tracking-widest text-moss hover:text-charcoal border-b border-transparent hover:border-moss pb-0.5 transition-all">分享相册</button>
-        </div>
-        ` : '<div class="mb-14"></div>'}
+        <header class="mb-14">
+          <p class="editorial-overline">相册</p>
+          <div class="editorial-rule"></div>
+          <h1 class="text-4xl md:text-5xl font-light text-charcoal leading-tight tracking-tight mb-4">${displayCity}</h1>
+          <div id="album-description" class="text-base md:text-lg text-mid-gray leading-relaxed max-w-2xl"></div>
+          ${isAdmin ? `
+            <div class="mt-6 flex gap-4">
+              <button onclick="albumPage.editDescription()" class="text-xs tracking-widest text-mid-gray hover:text-charcoal border-b border-transparent hover:border-mid-gray pb-0.5 transition-all">编辑说明</button>
+              <button onclick="albumPage.createShare()" class="text-xs tracking-widest text-moss hover:text-charcoal border-b border-transparent hover:border-moss pb-0.5 transition-all">分享相册</button>
+            </div>
+          ` : ''}
+        </header>
 
         <div id="album-photos"></div>
       </div>
@@ -76,38 +64,7 @@ class AlbumPage {
       this.album = data.album;
       this.photos = data.photos;
 
-      // Hero cover
-      const coverUrl = this.album.coverUrl || (this.photos.length > 0 ? this.photos[0].thumbnailUrl || this.photos[0].cosUrl : null);
-      if (coverUrl) {
-        const hero = document.getElementById('album-hero');
-        hero.classList.remove('hidden');
-        document.getElementById('album-hero-img').src = coverUrl;
-        document.getElementById('album-hero-title').textContent = this.album.city.replace(/市$/, '');
-      }
-
-      // Info bar
-      const infobar = document.getElementById('album-infobar');
-      const months = this.photos
-        .map(p => p.takenYearMonth)
-        .filter(Boolean)
-        .sort();
-      const dateRange = months.length > 0
-        ? (months[0] === months[months.length - 1]
-          ? months[0].replace('-', '年') + '月'
-          : months[0].replace('-', '年') + '月 — ' + months[months.length - 1].replace('-', '年') + '月')
-        : null;
-      const items = [
-        `<span class="tracking-wide">${this.photos.length} 张照片</span>`,
-        dateRange ? `<span class="text-sand">·</span><span class="tracking-wide">${dateRange}</span>` : '',
-        this.album.province ? `<span class="text-sand">·</span><span class="tracking-wide">${this.album.province}</span>` : '',
-      ];
-      infobar.innerHTML = items.join('');
-      infobar.classList.remove('hidden');
-
-      // Description
-      document.getElementById('album-description').textContent = this.album.description || '';
-
-      // Photos
+      document.getElementById('album-description').textContent = this.album.description || '暂无描述';
       const groups = this.groupPhotosByDate(this.photos);
       this.photoGrid.renderGrouped(groups, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
 
@@ -147,7 +104,7 @@ class AlbumPage {
     const desc = prompt('编辑相册说明:', this.album.description || '');
     if (desc === null) return;
     apiClient.updateAlbum({ city: this.album.city, description: desc })
-      .then(() => { this.album.description = desc; document.getElementById('album-description').textContent = desc || ''; })
+      .then(() => { this.album.description = desc; document.getElementById('album-description').textContent = desc || '暂无描述'; })
       .catch(err => alert('更新失败: ' + err.message));
   }
 
@@ -181,22 +138,6 @@ class AlbumPage {
       this.photos = this.photos.filter(p => p._id !== id);
       const groups = this.groupPhotosByDate(this.photos);
       this.photoGrid.renderGrouped(groups, { editable: !!getToken(), onDelete: (id) => albumPage.deletePhoto(id) });
-
-      // Update infobar after deletion
-      const infobar = document.getElementById('album-infobar');
-      const months = this.photos.map(p => p.takenYearMonth).filter(Boolean).sort();
-      const dateRange = months.length > 0
-        ? (months[0] === months[months.length - 1]
-          ? months[0].replace('-', '年') + '月'
-          : months[0].replace('-', '年') + '月 — ' + months[months.length - 1].replace('-', '年') + '月')
-        : null;
-      const items = [
-        `<span class="tracking-wide">${this.photos.length} 张照片</span>`,
-        dateRange ? `<span class="text-sand">·</span><span class="tracking-wide">${dateRange}</span>` : '',
-        this.album.province ? `<span class="text-sand">·</span><span class="tracking-wide">${this.album.province}</span>` : '',
-      ];
-      infobar.innerHTML = items.join('');
-
     } catch (err) {
       alert('删除失败: ' + err.message);
     }
