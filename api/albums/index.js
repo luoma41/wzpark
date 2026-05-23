@@ -7,7 +7,7 @@ async function handler(req, res) {
   const albums = db.collection('albums');
 
   if (req.method === 'GET') {
-    const list = await albums.find({}).sort({ photoCount: -1 }).toArray();
+    const list = await albums.find({ photoCount: { $gt: 0 } }).sort({ photoCount: -1 }).toArray();
     return sendSuccess(res, list);
   }
 

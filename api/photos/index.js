@@ -37,8 +37,9 @@ const handler = async (req, res) => {
 
     const result = await photos.insertMany(items);
 
-    // Drop problematic unique index on albums.city if it exists
+    // Clean up dirty data and problematic index
     try {
+      await albums.deleteMany({ $or: [{ city: null }, { city: '' }, { city: { $exists: false } }] });
       const indexes = await albums.indexes();
       for (const idx of indexes) {
         if (idx.unique && idx.key && idx.key.city !== undefined) {
@@ -47,7 +48,7 @@ const handler = async (req, res) => {
         }
       }
     } catch (e) {
-      console.log('Index check/drop error:', e.message);
+      console.log('Cleanup error:', e.message);
     }
 
     // Update album photoCount
@@ -78,11 +79,28 @@ const handler = async (req, res) => {
         );
       } catch (err) {
         if (err.code === 11000) {
-          console.warn('Duplicate key ignored for city:', safeCity, err.message);
+          console.warn('Duplicate key on upsert for city:', safeCity, '- retrying update only');
+          await albums.updateOne(
+            { city: safeCity },
+            { $inc: { photoCount: count }, $set: { updatedAt: now } }
+          );
         } else {
           throw err;
         }
       }
+    }
+
+    // Recalculate photoCount for all albums to ensure consistency
+    const allAlbums = await albums.find({}, { projection: { city: 1 } }).toArray();
+    for (const album of allAlbums) {
+      const safeCity = album.city;
+      if (!safeCity) continue;
+      const actualCount = await photos.countDocuments({ city: safeCity });
+      await albums.updateOne(
+        { city: safeCity },
+        { $set: { photoCount: actualCount } }
+      );
+      console.log('Recalculated photoCount for', safeCity, ':', actualCount);
     }
 
     return sendSuccess(res, { insertedIds: result.insertedIds });
