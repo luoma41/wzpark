@@ -8,6 +8,7 @@ class HomePage {
     this.renderLayout();
     this.map = new MapComponent('home-map');
     await this.map.init();
+    setTimeout(() => this.map.map?.invalidateSize(), 400);
     await this.loadAlbums();
   }
 
