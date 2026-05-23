@@ -40,14 +40,20 @@ const handler = async (req, res) => {
     // Update album photoCount
     const cityGroups = {};
     items.forEach(p => { cityGroups[p.city] = (cityGroups[p.city] || 0) + 1; });
+    console.log('cityGroups:', cityGroups);
 
     for (const [city, count] of Object.entries(cityGroups)) {
-      const album = await albums.findOne({ city });
+      const safeCity = city || '未知城市';
+      if (!safeCity || safeCity === '未知城市') {
+        console.warn('Skipping album creation for invalid city:', city);
+        continue;
+      }
+      const album = await albums.findOne({ city: safeCity });
       if (album) {
-        await albums.updateOne({ city }, { $inc: { photoCount: count }, $set: { updatedAt: now } });
+        await albums.updateOne({ city: safeCity }, { $inc: { photoCount: count }, $set: { updatedAt: now } });
       } else {
         await albums.insertOne({
-          city,
+          city: safeCity,
           province: items.find(i => i.city === city)?.province || '',
           coverPhotoId: null,
           description: '',
