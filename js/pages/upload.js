@@ -114,7 +114,7 @@ class UploadPage {
             <span id="city-badge-${idx}" class="text-xs text-mid-gray">${p.city || '未分类'}</span>
           </div>
         </div>
-        ${!p.lat ? `<button onclick="uploadPage.manualLocate(${idx})" class="text-xs text-moss hover:underline flex-shrink-0">手动定位</button>` : ''}
+        ${!p.city ? `<button onclick="uploadPage.manualLocate(${idx})" class="text-xs text-moss hover:underline flex-shrink-0">手动定位</button>` : `<button onclick="uploadPage.editCity(${idx})" class="text-xs text-mid-gray hover:text-moss hover:underline flex-shrink-0">修改城市</button>`}
         <button onclick="uploadPage.removeFile(${idx})" class="text-xs text-red-500 hover:text-red-700 flex-shrink-0">删除</button>
       </div>
     `).join('');
@@ -125,6 +125,16 @@ class UploadPage {
     if (!city) return;
     this.files[idx].city = city;
     document.getElementById(`city-badge-${idx}`).textContent = city;
+    this.renderPreview();
+  }
+
+  editCity(idx) {
+    const current = this.files[idx].city || '';
+    const city = prompt('修改城市名称:', current);
+    if (city === null) return;
+    this.files[idx].city = city || null;
+    document.getElementById(`city-badge-${idx}`).textContent = city || '未分类';
+    this.renderPreview();
   }
 
   removeFile(idx) {
@@ -135,6 +145,12 @@ class UploadPage {
 
   async uploadAll() {
     if (!this.stsCredentials) { alert('上传凭证未就绪'); return; }
+
+    const missingCity = this.files.some(p => !p.city);
+    if (missingCity) {
+      alert('部分照片缺少城市信息，请点击"手动定位"补充城市名称后再上传');
+      return;
+    }
 
     const btn = document.getElementById('upload-btn');
     btn.disabled = true;
