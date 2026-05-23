@@ -47,14 +47,13 @@ const handler = async (req, res) => {
       console.log('DeleteMany error:', e.message);
     }
 
-    // Drop problematic unique index on city
-    let albumIndexes = [];
+    // Drop ALL unique indexes (including malformed ones like "city" with quotes)
     try {
-      albumIndexes = await albums.indexes();
-      for (const idx of albumIndexes) {
-        if (idx.unique && idx.key && idx.key.city !== undefined) {
+      const indexes = await albums.indexes();
+      for (const idx of indexes) {
+        if (idx.unique && idx.name !== '_id_') {
           await albums.dropIndex(idx.name);
-          console.log('Dropped unique city index:', idx.name);
+          console.log('Dropped unique index:', idx.name, 'key:', JSON.stringify(idx.key));
         }
       }
     } catch (e) {
@@ -120,16 +119,17 @@ const handler = async (req, res) => {
     }
 
     const finalAlbums = await albums.find({}, { projection: { city: 1, photoCount: 1 } }).toArray();
+    const albumIndexes = await albums.indexes();
     return sendSuccess(res, {
       insertedIds: result.insertedIds,
-      version: '2.3',
+      version: '2.4',
       albumsUpdated: Object.keys(cityGroups),
       diagnostics: {
         insertedItemsCities,
         operationLog,
-        albumIndexes: albumIndexes.map(i => ({ name: i.name, key: i.key, unique: !!i.unique })),
         allAlbumsBeforeRecalc,
-        finalAlbums
+        finalAlbums,
+        albumIndexes
       }
     });
   }

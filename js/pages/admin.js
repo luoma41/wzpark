@@ -83,15 +83,15 @@ class AdminPage {
     try {
       const preview = await api('/cleanup-orphans', { method: 'POST', body: JSON.stringify({ dryRun: true }) });
 
-      if (preview.data.orphansFound === 0) {
-        resultEl.innerHTML = `<p class="text-sm text-moss">${preview.data.message || '未发现孤儿文件，COS 和数据库完全一致。'}</p>`;
+      if (preview.orphansFound === 0) {
+        resultEl.innerHTML = `<p class="text-sm text-moss">${preview.message || '未发现孤儿文件，COS 和数据库完全一致。'}</p>`;
         return;
       }
 
-      const list = preview.data.orphanKeys.slice(0, 20).map(k => `<li class="text-xs text-mid-gray truncate">${k}</li>`).join('');
-      const more = preview.data.orphanKeys.length > 20 ? `<p class="text-xs text-mid-gray mt-1">...还有 ${preview.data.orphanKeys.length - 20} 个文件</p>` : '';
+      const list = preview.orphanKeys.slice(0, 20).map(k => `<li class="text-xs text-mid-gray truncate">${k}</li>`).join('');
+      const more = preview.orphanKeys.length > 20 ? `<p class="text-xs text-mid-gray mt-1">...还有 ${preview.orphanKeys.length - 20} 个文件</p>` : '';
 
-      const confirmDelete = confirm(`发现 ${preview.data.orphansFound} 个孤儿文件（COS 中有但数据库无记录）。\n\n前 20 个：\n${preview.data.orphanKeys.slice(0, 20).join('\n')}\n\n确定删除这些文件吗？`);
+      const confirmDelete = confirm(`发现 ${preview.orphansFound} 个孤儿文件（COS 中有但数据库无记录）。\n\n前 20 个：\n${preview.orphanKeys.slice(0, 20).join('\n')}\n\n确定删除这些文件吗？`);
 
       if (!confirmDelete) {
         resultEl.innerHTML = '<p class="text-sm text-amber-600">已取消清理。</p>';
@@ -104,10 +104,10 @@ class AdminPage {
       resultEl.innerHTML = `
         <div class="p-3 bg-moss/10 rounded-lg text-sm">
           <p class="text-moss font-medium">清理完成</p>
-          <p class="text-mid-gray">COS 总文件：${delRes.data.totalCosFiles} 个</p>
-          <p class="text-mid-gray">数据库记录：${delRes.data.totalDbFiles} 个</p>
-          <p class="text-mid-gray">发现孤儿：${delRes.data.orphansFound} 个</p>
-          <p class="text-mid-gray">成功删除：${delRes.data.deleted} 个</p>
+          <p class="text-mid-gray">COS 总文件：${delRes.totalCosFiles || 0} 个</p>
+          <p class="text-mid-gray">数据库记录：${delRes.totalDbFiles || 0} 个</p>
+          <p class="text-mid-gray">发现孤儿：${delRes.orphansFound || 0} 个</p>
+          <p class="text-mid-gray">成功删除：${delRes.deleted || 0} 个</p>
         </div>
       `;
     } catch (err) {
