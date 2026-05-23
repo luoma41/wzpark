@@ -48,9 +48,10 @@ const handler = async (req, res) => {
     }
 
     // Drop problematic unique index on city
+    let albumIndexes = [];
     try {
-      const indexes = await albums.indexes();
-      for (const idx of indexes) {
+      albumIndexes = await albums.indexes();
+      for (const idx of albumIndexes) {
         if (idx.unique && idx.key && idx.key.city !== undefined) {
           await albums.dropIndex(idx.name);
           console.log('Dropped unique city index:', idx.name);
@@ -97,7 +98,7 @@ const handler = async (req, res) => {
             { city: safeCity },
             { $inc: { photoCount: count }, $set: { updatedAt: now } }
           );
-          operationLog.push({ step: 'update_after_duplicate', city, safeCity, matched: updateRes.matchedCount });
+          operationLog.push({ step: 'update_after_duplicate', city, safeCity, matched: updateRes.matchedCount, dupError: err.message });
         } else {
           operationLog.push({ step: 'error', city, safeCity, error: err.message, code: err.code });
           throw err;
@@ -126,6 +127,7 @@ const handler = async (req, res) => {
       diagnostics: {
         insertedItemsCities,
         operationLog,
+        albumIndexes: albumIndexes.map(i => ({ name: i.name, key: i.key, unique: !!i.unique })),
         allAlbumsBeforeRecalc,
         finalAlbums
       }
